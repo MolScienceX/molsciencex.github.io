@@ -71,6 +71,10 @@
         /* --- Footer --- */
         footer { padding: 60px 0; display: flex; justify-content: space-between; align-items: flex-start; font-size: 12px; }
         .footer-links { list-style: none; display: flex; gap: 30px; font-weight: 700; text-transform: uppercase; }
+        .footer-links a {
+            color: var(--text-main);
+            text-decoration: none;
+        }
 
         @media (max-width: 768px) {
             .hero-layout, .feature-grid, .timeline { grid-template-columns: 1fr; flex-direction: column; gap: 40px; }
