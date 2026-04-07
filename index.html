@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MolScience | 分子科学基础设施</title>
+    <style>
+        :root {
+            --bg-color: #F5F5F0;
+            --text-main: #000000;
+            --text-muted: #444444;
+            --line-weight: 1px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: "Inter", "Source Han Serif SC", "Georgia", serif;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            padding: 0 4vw; /* 使用视口单位保持比例 */
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* --- Header --- */
+        header {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: var(--line-weight) solid var(--text-main);
+        }
+
+        .logo-box { display: flex; align-items: center; gap: 15px; }
+        .logo-box img { width: 30px; height: 30px; filter: grayscale(100%); transition: 0.3s; }
+        .logo-box img:hover { filter: none; }
+        .nav-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
+
+        /* --- Hero --- */
+        .hero { padding: 120px 0 100px 0; border-bottom: var(--line-weight) solid var(--text-main); }
+        .hero h1 { font-size: clamp(48px, 8vw, 96px); font-weight: 800; line-height: 0.95; letter-spacing: -4px; margin-bottom: 60px; }
+        .hero-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; }
+        .hero-tagline { font-size: 14px; font-weight: 700; text-transform: uppercase; border-left: 3px solid #000; padding-left: 15px; }
+        .hero-desc { font-size: 20px; font-weight: 400; line-height: 1.4; color: var(--text-muted); }
+
+        /* --- Content Sections --- */
+        .section-padding { padding: 100px 0; border-bottom: var(--line-weight) solid var(--text-main); }
+        .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; display: block; margin-bottom: 50px; }
+
+        /* 1. 技术三维布局 */
+        .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 60px; }
+        .feature-item h3 { font-size: 28px; font-weight: 700; margin-bottom: 20px; letter-spacing: -1px; }
+        .feature-item p { font-size: 16px; color: var(--text-muted); }
+
+        /* 2. 项目历程 Timeline */
+        .timeline { display: flex; justify-content: space-between; padding-top: 20px; }
+        .time-node { flex: 1; border-left: var(--line-weight) solid #000; padding: 15px 20px 40px 20px; }
+        .time-node .date { font-family: monospace; font-size: 12px; margin-bottom: 10px; display: block; }
+        .time-node .event { font-size: 15px; font-weight: 600; }
+
+        /* 3. 数据表 Metrics */
+        .metrics-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .metrics-table tr { border-bottom: var(--line-weight) solid #ccc; }
+        .metrics-table td { padding: 20px 0; font-size: 16px; }
+        .metrics-table td:last-child { text-align: right; font-weight: 700; font-family: monospace; }
+
+        /* --- Footer --- */
+        footer { padding: 60px 0; display: flex; justify-content: space-between; align-items: flex-start; font-size: 12px; }
+        .footer-links { list-style: none; display: flex; gap: 30px; font-weight: 700; text-transform: uppercase; }
+
+        @media (max-width: 768px) {
+            .hero-layout, .feature-grid, .timeline { grid-template-columns: 1fr; flex-direction: column; gap: 40px; }
+            .hero h1 { font-size: 50px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="logo-box">
+                <img src="https://s.guyue.me/img/icon_molscience.png" alt="MolScience">
+                <span class="nav-label">MolScience / Infrastructure</span>
+            </div>
+            <span class="nav-label">Ver. 2.0.26 / Built by ChemAI</span>
+        </header>
+
+        <section class="hero">
+            <h1>Molecular Science.<br>Automated Engine.</h1>
+            <div class="hero-layout">
+                <div class="hero-tagline">人工智能驱动的<br>化学研究范式转型</div>
+                <p class="hero-desc">
+                    MolScience 旨在通过“数据-模型-交互”三位一体的架构，解决当前分子数据标准不一、智能化不足的核心痛点，构建自主可控的科研底座。
+                </p>
+            </div>
+        </section>
+
+        <section class="section-padding">
+            <span class="label">01 / Technical Architecture</span>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h3>多模态存储</h3>
+                    <p>整合关系型属性、复杂的反应路径图以及高维语义向量，实现跨维度的分子信息协同检索。</p>
+                </div>
+                <div class="feature-item">
+                    <h3>智能化预测</h3>
+                    <p>集成传统机器学习与图神经网络，支持性质预测、合成路径规划与分子相似性推荐。</p>
+                </div>
+                <div class="feature-item">
+                    <h3>RAG 交互</h3>
+                    <p>基于检索增强生成的语义引擎，允许科研人员通过自然语言与结构化化学数据库进行逻辑对话。</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-padding">
+            <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 100px;">
+                <div>
+                    <span class="label">02 / System Metrics</span>
+                    <p style="font-size: 18px; line-height: 1.4;">系统在模拟大规模分子检索场景下表现出极高的响应一致性与数据准确度。</p>
+                </div>
+                <table class="metrics-table">
+                    <tr><td>向量检索响应延迟 / Vector Retrieval Latency</td><td>&lt; 50ms</td></tr>
+                    <tr><td>分子性质预测准确度 / Property Prediction (R²)</td><td>0.92+</td></tr>
+                    <tr><td>结构化数据覆盖率 / Data Normalization Rate</td><td>99.8%</td></tr>
+                    <tr><td>API 吞吐量 / System Throughput</td><td>10k req/s</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <section class="section-padding">
+            <span class="label">03 / Roadmap & Development</span>
+            <div class="timeline">
+                <div class="time-node">
+                    <span class="date">2025 Q1</span>
+                    <div class="event">ChemAI 创研团队组建与数据底座选型</div>
+                </div>
+                <div class="time-node">
+                    <span class="date">2025 Q3</span>
+                    <div class="event">多模态数据库原型开发与向量化实验</div>
+                </div>
+                <div class="time-node">
+                    <span class="date">2026 Q1</span>
+                    <div class="event">RAG 语义引擎集成与内测开启</div>
+                </div>
+                <div class="time-node" style="border-right: 1px solid #000;">
+                    <span class="date">2026 Q4</span>
+                    <div class="event">MolScience 平台正式发布与学术公开</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-padding" style="border-bottom: none;">
+            <p style="font-size: 42px; font-weight: 700; letter-spacing: -2px; line-height: 1.2; max-width: 1000px;">
+                “我们不只是在存储数据，而是在构建一个具备专业逻辑的化学大脑。让数据成为燃料，让 AI 成为发现的导师。”
+            </p>
+        </section>
+
+        <footer>
+            <div>
+                <p>© 2026 MolScience Project</p>
+                <p style="color: #888; margin-top: 5px;">Built with logic and integrity.</p>
+            </div>
+            <ul class="footer-links">
+                <li>Documentation</li>
+                <li>Research Paper</li>
+                <li>Contact</li>
+            </ul>
+        </footer>
+    </div>
+
+</body>
+</html>
