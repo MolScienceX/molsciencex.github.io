@@ -4,178 +4,1258 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/x-icon" href="https://s.guyue.me/img/icon_molscience.png">
-    <title>MolScience | 分子科学</title>
+    <title>MolScience | AI 原生分子数据库基础设施</title>
     <style>
-        :root {
-            --bg-color: #F5F5F0;
-            --text-main: #000000;
-            --text-muted: #444444;
-            --line-weight: 1px;
+        @font-face {
+            font-family: "Inter";
+            src: url("assets/fonts/inter-latin-400.woff2") format("woff2");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @font-face {
+            font-family: "Inter";
+            src: url("assets/fonts/inter-latin-500.woff2") format("woff2");
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "Inter";
+            src: url("assets/fonts/inter-latin-600.woff2") format("woff2");
+            font-weight: 600;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "Inter Tight";
+            src: url("assets/fonts/inter-tight-latin-400.woff2") format("woff2");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "Inter Tight";
+            src: url("assets/fonts/inter-tight-latin-500.woff2") format("woff2");
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "Inter Tight";
+            src: url("assets/fonts/inter-tight-latin-600.woff2") format("woff2");
+            font-weight: 600;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "Noto Sans SC";
+            src: url("assets/fonts/noto-sans-sc-chinese-simplified-400.woff2") format("woff2");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "Noto Sans SC";
+            src: url("assets/fonts/noto-sans-sc-chinese-simplified-500.woff2") format("woff2");
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "Noto Sans SC";
+            src: url("assets/fonts/noto-sans-sc-chinese-simplified-600.woff2") format("woff2");
+            font-weight: 600;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "JetBrains Mono";
+            src: url("assets/fonts/jetbrains-mono-latin-400.woff2") format("woff2");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "JetBrains Mono";
+            src: url("assets/fonts/jetbrains-mono-latin-500.woff2") format("woff2");
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        :root {
+            --bg: #171717;
+            --bg-deep: #0f0f0f;
+            --surface: rgba(41, 41, 41, 0.84);
+            --surface-soft: hsla(210, 87.8%, 16.1%, 0.031);
+            --text: #fafafa;
+            --text-secondary: #b4b4b4;
+            --text-muted: #898989;
+            --border-subtle: #242424;
+            --border: #2e2e2e;
+            --border-strong: #363636;
+            --green: #3ecf8e;
+            --green-link: #00c573;
+            --green-border: rgba(62, 207, 142, 0.3);
+            --font-sans: Inter, "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+            --font-display: "Inter Tight", Inter, "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+            --font-mono: "JetBrains Mono", "Cascadia Mono", "Source Code Pro", Menlo, Consolas, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: "Inter", "Source Han Serif SC", "Georgia", serif;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            font-size: 16px;
+            font-weight: 400;
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
-            padding: 0 4vw; /* 使用视口单位保持比例 */
+            text-rendering: optimizeLegibility;
         }
 
-        .container { max-width: 1200px; margin: 0 auto; }
-
-        /* --- Header --- */
-        header {
-            height: 100px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: var(--line-weight) solid var(--text-main);
-        }
-
-        .logo-box { display: flex; align-items: center; gap: 15px; }
-        .logo-box img { width: 30px; height: 30px; filter: grayscale(100%); transition: 0.3s; }
-        .logo-box img:hover { filter: none; }
-        .nav-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
-
-        /* --- Hero --- */
-        .hero { padding: 120px 0 100px 0; border-bottom: var(--line-weight) solid var(--text-main); }
-        .hero h1 { font-size: clamp(48px, 8vw, 96px); font-weight: 800; line-height: 0.95; letter-spacing: -4px; margin-bottom: 60px; }
-        .hero-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; }
-        .hero-tagline { font-size: 14px; font-weight: 700; text-transform: uppercase; border-left: 3px solid #000; padding-left: 15px; }
-        .hero-desc { font-size: 20px; font-weight: 400; line-height: 1.4; color: var(--text-muted); }
-
-        /* --- Content Sections --- */
-        .section-padding { padding: 100px 0; border-bottom: var(--line-weight) solid var(--text-main); }
-        .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; display: block; margin-bottom: 50px; }
-
-        /* 1. 技术三维布局 */
-        .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 60px; }
-        .feature-item h3 { font-size: 28px; font-weight: 700; margin-bottom: 20px; letter-spacing: -1px; }
-        .feature-item p { font-size: 16px; color: var(--text-muted); }
-
-        /* 2. 项目历程 Timeline */
-        .timeline { display: flex; justify-content: space-between; padding-top: 20px; }
-        .time-node { flex: 1; border-left: var(--line-weight) solid #000; padding: 15px 20px 40px 20px; }
-        .time-node .date { font-family: monospace; font-size: 12px; margin-bottom: 10px; display: block; }
-        .time-node .event { font-size: 15px; font-weight: 600; }
-
-        /* 3. 数据表 Metrics */
-        .metrics-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .metrics-table tr { border-bottom: var(--line-weight) solid #ccc; }
-        .metrics-table td { padding: 20px 0; font-size: 16px; }
-        .metrics-table td:last-child { text-align: right; font-weight: 700; font-family: monospace; }
-
-        /* --- Footer --- */
-        footer { padding: 60px 0; display: flex; justify-content: space-between; align-items: flex-start; font-size: 12px; }
-        .footer-links { list-style: none; display: flex; gap: 30px; font-weight: 700; text-transform: uppercase; }
-        .footer-links a {
-            color: var(--text-main);
+        a {
+            color: inherit;
             text-decoration: none;
         }
 
-        @media (max-width: 768px) {
-            .hero-layout, .feature-grid, .timeline { grid-template-columns: 1fr; flex-direction: column; gap: 40px; }
-            .hero h1 { font-size: 50px; }
+        .shell {
+            width: min(1180px, calc(100% - 48px));
+            margin: 0 auto;
+        }
+
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(23, 23, 23, 0.88);
+            border-bottom: 1px solid var(--border-subtle);
+            backdrop-filter: blur(16px);
+        }
+
+        .nav {
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1;
+        }
+
+        .brand-mark {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--green-border);
+            border-radius: 8px;
+            background: var(--bg-deep);
+            display: grid;
+            place-items: center;
+        }
+
+        .brand-mark img {
+            width: 18px;
+            height: 18px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+        }
+
+        .language-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 34px;
+            padding: 6px;
+            border: 1px solid var(--border);
+            border-radius: 9999px;
+            background: var(--bg-deep);
+        }
+
+        .language-toggle button {
+            min-width: 34px;
+            min-height: 22px;
+            padding: 3px 8px;
+            border: 1px solid transparent;
+            border-radius: 9999px;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.33;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+
+        .language-toggle button[aria-pressed="true"] {
+            border-color: var(--green-border);
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .language-toggle button:focus-visible {
+            outline: 1px solid var(--green);
+            outline-offset: 2px;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 34px;
+            padding: 8px 32px;
+            border-radius: 9999px;
+            border: 1px solid var(--border);
+            background: var(--bg-deep);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.14;
+            white-space: nowrap;
+        }
+
+        .button.primary {
+            border-color: var(--text);
+        }
+
+        .button:hover,
+        .button:focus-visible {
+            border-color: var(--green-border);
+            outline: none;
+        }
+
+        .hero {
+            min-height: calc(100svh - 96px);
+            padding: 96px 0 64px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: grid;
+            align-items: center;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.88fr);
+            gap: 48px;
+            align-items: center;
+        }
+
+        .eyebrow,
+        .code-label {
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.33;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            max-width: 760px;
+            margin-top: 18px;
+            color: var(--text);
+            font-family: var(--font-display);
+            font-size: clamp(48px, 8vw, 72px);
+            font-weight: 500;
+            line-height: 1;
+            letter-spacing: 0;
+        }
+
+        .hero-copy {
+            max-width: 640px;
+            margin-top: 24px;
+            color: var(--text-secondary);
+            font-size: 18px;
+            font-weight: 400;
+            line-height: 1.56;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        .hero-panel {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: var(--surface);
+            overflow: hidden;
+        }
+
+        .panel-topbar {
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .window-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .window-dots span {
+            width: 7px;
+            height: 7px;
+            border-radius: 9999px;
+            background: var(--border-strong);
+        }
+
+        .database-visual {
+            padding: 22px;
+            display: grid;
+            gap: 16px;
+        }
+
+        .query-line {
+            display: grid;
+            grid-template-columns: 86px 1fr;
+            gap: 12px;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-deep);
+        }
+
+        .query-line strong {
+            color: var(--green-link);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+
+        .query-line span {
+            min-width: 0;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.33;
+        }
+
+        .visual-stack {
+            display: grid;
+            gap: 10px;
+        }
+
+        .visual-node {
+            display: grid;
+            grid-template-columns: 20px 1fr auto;
+            gap: 12px;
+            align-items: center;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #171717;
+        }
+
+        .node-icon {
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--green-border);
+            border-radius: 9999px;
+            position: relative;
+        }
+
+        .node-icon::after {
+            content: "";
+            position: absolute;
+            inset: 6px;
+            border-radius: inherit;
+            background: var(--green);
+        }
+
+        .node-title {
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.43;
+        }
+
+        .node-meta {
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 12px;
+        }
+
+        .section {
+            padding: 96px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .section-head {
+            display: grid;
+            grid-template-columns: minmax(180px, 0.35fr) minmax(0, 0.65fr);
+            gap: 48px;
+            align-items: start;
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            color: var(--text);
+            font-family: var(--font-display);
+            font-size: clamp(30px, 5vw, 36px);
+            font-weight: 500;
+            line-height: 1.25;
+        }
+
+        .section-intro {
+            color: var(--text-secondary);
+            font-size: 18px;
+            line-height: 1.56;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .metric {
+            min-height: 154px;
+            padding: 24px;
+            border-right: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+        .metric:last-child {
+            border-right: 0;
+        }
+
+        .metric-value {
+            color: var(--text);
+            font-family: var(--font-display);
+            font-size: 36px;
+            font-weight: 500;
+            line-height: 1.25;
+        }
+
+        .metric-label {
+            margin-top: 12px;
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.43;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .feature-card {
+            min-height: 250px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: var(--bg);
+        }
+
+        .feature-card.accent {
+            border-color: var(--green-border);
+        }
+
+        h3 {
+            margin-top: 20px;
+            color: var(--text);
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 500;
+            line-height: 1.33;
+            letter-spacing: 0;
+        }
+
+        .feature-card p,
+        .flow-item p,
+        .value-item p {
+            margin-top: 12px;
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.43;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 9999px;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.33;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+
+        .architecture {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .arch-column {
+            padding: 24px;
+            border-right: 1px solid var(--border);
+            background: var(--surface-soft);
+        }
+
+        .arch-column:last-child {
+            border-right: 0;
+        }
+
+        .arch-column h3 {
+            margin-top: 24px;
+        }
+
+        .arch-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 20px;
+            list-style: none;
+        }
+
+        .arch-list li {
+            padding: 12px 0;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.43;
+        }
+
+        .flow {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: var(--border);
+            overflow: hidden;
+        }
+
+        .flow-item {
+            min-height: 190px;
+            padding: 24px;
+            background: var(--bg);
+        }
+
+        .flow-index {
+            color: var(--green-link);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            letter-spacing: 1.2px;
+        }
+
+        .value-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .value-item {
+            padding: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .final-band {
+            padding: 96px 0 90px;
+        }
+
+        .statement {
+            max-width: 980px;
+            color: var(--text);
+            font-family: var(--font-display);
+            font-size: clamp(34px, 6vw, 56px);
+            font-weight: 500;
+            line-height: 1.06;
+        }
+
+        .statement span {
+            color: var(--green);
+        }
+
+        .footer {
+            border-top: 1px solid var(--border-subtle);
+            padding: 32px 0 48px;
+        }
+
+        .footer-inner {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 24px;
+            color: var(--text-muted);
+            font-size: 12px;
+            line-height: 1.33;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+        }
+
+        .footer a {
+            color: var(--text-secondary);
+        }
+
+        .footer a:hover {
+            color: var(--green-link);
+        }
+
+        @media (max-width: 860px) {
+            .hero-grid,
+            .section-head,
+            .architecture {
+                grid-template-columns: 1fr;
+            }
+
+            .metric-grid,
+            .feature-grid,
+            .flow,
+            .value-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .metric:nth-child(2) {
+                border-right: 0;
+            }
+
+            .metric:nth-child(-n + 2) {
+                border-bottom: 1px solid var(--border);
+            }
+
+            .arch-column {
+                border-right: 0;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .arch-column:last-child {
+                border-bottom: 0;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .shell {
+                width: min(100% - 32px, 1180px);
+            }
+
+            .nav {
+                align-items: flex-start;
+                flex-direction: column;
+                padding: 16px 0;
+            }
+
+            .nav-links {
+                width: 100%;
+                justify-content: space-between;
+                gap: 12px;
+                overflow-x: auto;
+                padding-bottom: 2px;
+            }
+
+            .hero {
+                min-height: auto;
+                padding: 64px 0 48px;
+            }
+
+            .hero-grid {
+                gap: 32px;
+            }
+
+            h1 {
+                font-size: clamp(42px, 14vw, 56px);
+            }
+
+            .hero-copy,
+            .section-intro {
+                font-size: 16px;
+            }
+
+            .hero-actions {
+                width: 100%;
+            }
+
+            .hero-actions .button {
+                width: 100%;
+            }
+
+            .section {
+                padding: 64px 0;
+            }
+
+            .section-head {
+                gap: 24px;
+                margin-bottom: 28px;
+            }
+
+            .metric-grid,
+            .feature-grid,
+            .flow,
+            .value-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .metric,
+            .metric:nth-child(2),
+            .metric:nth-child(-n + 2) {
+                border-right: 0;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .metric:last-child {
+                border-bottom: 0;
+            }
+
+            .query-line {
+                grid-template-columns: 1fr;
+            }
+
+            .visual-node {
+                grid-template-columns: 20px 1fr;
+            }
+
+            .node-meta {
+                grid-column: 2;
+            }
+
+            .final-band {
+                padding: 64px 0;
+            }
+
+            .footer-inner,
+            .footer-links {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
+    <header class="site-header">
+        <div class="shell nav">
+            <a class="brand" href="#top" aria-label="MolScience 首页" data-i18n-attr="aria-label:brandHome">
+                <span class="brand-mark">
+                    <img src="https://s.guyue.me/img/icon_molscience.png" alt="">
+                </span>
+                <span>MolScience</span>
+            </a>
+            <nav class="nav-links" aria-label="主导航" data-i18n-attr="aria-label:mainNav">
+                <a href="#platform" data-i18n="navPlatform">平台</a>
+                <a href="#architecture" data-i18n="navArchitecture">架构</a>
+                <a href="#pipeline" data-i18n="navCapabilities">能力</a>
+                <div class="language-toggle" aria-label="语言切换" data-i18n-attr="aria-label:languageToggle">
+                    <button type="button" data-lang="zh" aria-pressed="true">中</button>
+                    <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                </div>
+                <a class="button primary" href="mailto:team@molscience.org">Contact</a>
+            </nav>
+        </div>
+    </header>
 
-    <div class="container">
-        <header>
-            <div class="logo-box">
-                <img src="https://s.guyue.me/img/icon_molscience.png" alt="MolScience">
-                <span class="nav-label">MolScience / Infrastructure</span>
-            </div>
-            <span class="nav-label">Ver. 2.0.1 / Built by ChemAI</span>
-        </header>
-
+    <main id="top">
         <section class="hero">
-            <h1>Molecular Science.<br>Automated Engine.</h1>
-            <div class="hero-layout">
-                <div class="hero-tagline">人工智能驱动的<br>化学研究范式转型</div>
-                <p class="hero-desc">
-                    MolScience 旨在通过“数据-模型-交互”三位一体的架构，解决当前分子数据标准不一、智能化不足的核心痛点，构建自主可控的科研底座。
+            <div class="shell hero-grid">
+                <div>
+                    <p class="eyebrow" data-i18n="heroEyebrow">AI-Native Molecular Database</p>
+                    <h1>MolScience</h1>
+                    <p class="hero-copy" data-i18n="heroCopy">
+                        面向人工智能时代的化学分子数据库基础设施。项目围绕“数据、模型、应用”三位一体，推动分子数据库从传统数据存储工具升级为智能知识引擎。
+                    </p>
+                    <div class="hero-actions">
+                        <a class="button primary" href="#platform" data-i18n="heroPrimary">了解项目</a>
+                        <a class="button" href="#architecture" data-i18n="heroSecondary">查看架构</a>
+                    </div>
+                </div>
+
+                <div class="hero-panel" aria-label="MolScience 数据库架构示意" data-i18n-attr="aria-label:heroPanelLabel">
+                    <div class="panel-topbar">
+                        <div class="window-dots" aria-hidden="true">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <span class="code-label">molscience.query</span>
+                    </div>
+                    <div class="database-visual">
+                        <div class="query-line">
+                            <strong>Prompt</strong>
+                            <span data-i18n="queryPrompt">寻找可解释、可建模、可检索的候选分子</span>
+                        </div>
+                        <div class="visual-stack">
+                            <div class="visual-node">
+                                <span class="node-icon" aria-hidden="true"></span>
+                                <span class="node-title" data-i18n="nodeStructured">结构化属性检索</span>
+                                <span class="node-meta">SMILES / InChI</span>
+                            </div>
+                            <div class="visual-node">
+                                <span class="node-icon" aria-hidden="true"></span>
+                                <span class="node-title" data-i18n="nodeGraph">反应网络与合成路径</span>
+                                <span class="node-meta">Graph</span>
+                            </div>
+                            <div class="visual-node">
+                                <span class="node-icon" aria-hidden="true"></span>
+                                <span class="node-title" data-i18n="nodeVector">语义相似性搜索</span>
+                                <span class="node-meta">Vector</span>
+                            </div>
+                            <div class="visual-node">
+                                <span class="node-icon" aria-hidden="true"></span>
+                                <span class="node-title" data-i18n="nodeRag">RAG 化学问答</span>
+                                <span class="node-meta">LLM</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="platform">
+            <div class="shell">
+                <div class="section-head">
+                    <p class="code-label" data-i18n="labelProjectBase">01 / Project Base</p>
+                    <div>
+                        <h2 data-i18n="projectTitle">自主可控、标准化、可扩展的分子数据底座。</h2>
+                        <p class="section-intro" data-i18n="projectIntro">
+                            MolScience 由中国人民大学化学与生命资源学院本科生团队发起，已完成初步平台开发，持续建设面向科研社区的 AI 原生化学数据基础设施。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="metric-grid">
+                    <div class="metric">
+                        <p class="metric-value" data-i18n="metricMoleculesValue">1.2亿</p>
+                        <p class="metric-label" data-i18n="metricMolecules">分子数据基础，面向大规模检索与建模任务。</p>
+                    </div>
+                    <div class="metric">
+                        <p class="metric-value" data-i18n="metricCodeValue">4万+</p>
+                        <p class="metric-label" data-i18n="metricCode">代码实现，覆盖平台、检索、管理与算法能力。</p>
+                    </div>
+                    <div class="metric">
+                        <p class="metric-value">200+</p>
+                        <p class="metric-label" data-i18n="metricDatabases">全球分子数据库调研，形成评价体系与学术基础。</p>
+                    </div>
+                    <div class="metric">
+                        <p class="metric-value" data-i18n="metricTeamValue">5名</p>
+                        <p class="metric-label" data-i18n="metricTeam">化学专业本科生组成核心团队，兼具科研与工程能力。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="shell">
+                <div class="section-head">
+                    <p class="code-label" data-i18n="labelResearchProblem">02 / Research Problem</p>
+                    <div>
+                        <h2 data-i18n="problemTitle">现有分子数据库仍主要服务“人用工具”，难以承载 AI 科研范式。</h2>
+                        <p class="section-intro" data-i18n="problemIntro">
+                            化学研究正在进入数据密集型科学发现阶段。高质量分子数据与高效数据库，正在成为 AI for Science 的基础设施。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="feature-grid">
+                    <article class="feature-card">
+                        <span class="chip">Architecture</span>
+                        <h3 data-i18n="problemArchitectureTitle">架构单一</h3>
+                        <p data-i18n="problemArchitectureText">传统关系型数据库难以同时支持图结构、向量检索与 AI 任务所需的多模态数据组织。</p>
+                    </article>
+                    <article class="feature-card">
+                        <span class="chip">Data Quality</span>
+                        <h3 data-i18n="problemQualityTitle">标准不一</h3>
+                        <p data-i18n="problemQualityText">多源分子数据在命名、结构表示、缺失值与异常值上存在治理难题，影响模型训练质量。</p>
+                    </article>
+                    <article class="feature-card accent">
+                        <span class="chip">AI Native</span>
+                        <h3 data-i18n="problemAiTitle">智能化缺失</h3>
+                        <p data-i18n="problemAiText">依赖精确匹配的检索方式无法支持自然语言查询、语义搜索与大模型工具调用。</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="architecture">
+            <div class="shell">
+                <div class="section-head">
+                    <p class="code-label" data-i18n="labelArchitecture">03 / Architecture</p>
+                    <div>
+                        <h2 data-i18n="architectureTitle">多数据库协同架构，同时支持精确查询、关系分析与语义检索。</h2>
+                        <p class="section-intro" data-i18n="architectureIntro">
+                            项目以关系型数据库、图数据库、向量数据库协同工作，突破单一数据库模式，为分子性质预测、相似性搜索、反向设计与合成路径分析提供统一底座。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="architecture">
+                    <div class="arch-column">
+                        <span class="chip">Relational</span>
+                        <h3 data-i18n="relationalTitle">结构化属性</h3>
+                        <ul class="arch-list">
+                            <li data-i18n="relationalItem1">分子式、分子量、物理化学性质</li>
+                            <li data-i18n="relationalItem2">SMILES / InChI 标准化表示</li>
+                            <li data-i18n="relationalItem3">高效筛选与精确条件查询</li>
+                        </ul>
+                    </div>
+                    <div class="arch-column">
+                        <span class="chip">Graph</span>
+                        <h3 data-i18n="graphTitle">反应网络</h3>
+                        <ul class="arch-list">
+                            <li data-i18n="graphItem1">表示反应关系与合成路径</li>
+                            <li data-i18n="graphItem2">支撑路径规划与关系推理</li>
+                            <li data-i18n="graphItem3">连接分子、反应、文献与知识节点</li>
+                        </ul>
+                    </div>
+                    <div class="arch-column">
+                        <span class="chip">Vector</span>
+                        <h3 data-i18n="vectorTitle">语义检索</h3>
+                        <ul class="arch-list">
+                            <li data-i18n="vectorItem1">支持分子相似性搜索</li>
+                            <li data-i18n="vectorItem2">连接大模型 RAG 问答</li>
+                            <li data-i18n="vectorItem3">为智能推荐与候选分子发现提供索引</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="pipeline">
+            <div class="shell">
+                <div class="section-head">
+                    <p class="code-label" data-i18n="labelPipeline">04 / Pipeline</p>
+                    <div>
+                        <h2 data-i18n="pipelineTitle">从数据治理到模型应用，构建可持续利用的完整链条。</h2>
+                        <p class="section-intro" data-i18n="pipelineIntro">
+                            MolScience 不止存储分子数据，还围绕清洗、特征、建模、应用与自然语言交互建立闭环，让数据库成为可被 AI 调用的知识引擎。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flow">
+                    <article class="flow-item">
+                        <span class="flow-index">01</span>
+                        <h3 data-i18n="flowDataTitle">数据整合</h3>
+                        <p data-i18n="flowDataText">整合 PubChem、文献等多源数据，统一分子结构与属性字段。</p>
+                    </article>
+                    <article class="flow-item">
+                        <span class="flow-index">02</span>
+                        <h3 data-i18n="flowGovernanceTitle">标准治理</h3>
+                        <p data-i18n="flowGovernanceText">完成去重、缺失值处理、异常检测，以及盐离子与溶剂等结构清理。</p>
+                    </article>
+                    <article class="flow-item">
+                        <span class="flow-index">03</span>
+                        <h3 data-i18n="flowModelTitle">分子建模</h3>
+                        <p data-i18n="flowModelText">结合描述符、分子指纹、分子图表示与 GNN 等模型进行性质预测。</p>
+                    </article>
+                    <article class="flow-item">
+                        <span class="flow-index">04</span>
+                        <h3 data-i18n="flowInteractionTitle">智能交互</h3>
+                        <p data-i18n="flowInteractionText">通过 RAG、向量检索和工具调用，探索问答式化学数据库体验。</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="shell">
+                <div class="section-head">
+                    <p class="code-label" data-i18n="labelValue">05 / Value</p>
+                    <div>
+                        <h2 data-i18n="valueTitle">服务科研基础设施、数据主权与 AI 化学前沿探索。</h2>
+                    </div>
+                </div>
+
+                <div class="value-grid">
+                    <div class="value-item">
+                        <span class="chip">Science</span>
+                        <h3 data-i18n="valueScienceTitle">科研基础设施</h3>
+                        <p data-i18n="valueScienceText">提供国产分子数据底座，支撑 AI for Science、虚拟筛选与分子设计任务。</p>
+                    </div>
+                    <div class="value-item">
+                        <span class="chip">Sovereignty</span>
+                        <h3 data-i18n="valueSovereigntyTitle">数据主权</h3>
+                        <p data-i18n="valueSovereigntyText">降低对国外核心数据库的依赖，提升科研数据连续性与自主可控能力。</p>
+                    </div>
+                    <div class="value-item">
+                        <span class="chip">Frontier</span>
+                        <h3 data-i18n="valueFrontierTitle">技术前沿</h3>
+                        <p data-i18n="valueFrontierText">探索数据库、机器学习、图结构与大模型融合的新型科研平台范式。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="final-band">
+            <div class="shell">
+                <p class="code-label" data-i18n="labelVision">Long-term Vision</p>
+                <p class="statement" data-i18n-html="visionStatement">
+                    构建面向全球科研社区的开放化学数据基础设施，连接<span>分子数据、人工智能与科学发现</span>。
                 </p>
             </div>
         </section>
+    </main>
 
-        <section class="section-padding">
-            <span class="label">01 / Technical Architecture</span>
-            <div class="feature-grid">
-                <div class="feature-item">
-                    <h3>多模态存储</h3>
-                    <p>整合关系型属性、复杂的反应路径图以及高维语义向量，实现跨维度的分子信息协同存储与检索。</p>
-                </div>
-                <div class="feature-item">
-                    <h3>智能化预测</h3>
-                    <p>集成传统机器学习与图神经网络，支持性质预测、合成路径规划与分子相似性推荐。</p>
-                </div>
-                <div class="feature-item">
-                    <h3>RAG 交互</h3>
-                    <p>基于检索增强生成的语义引擎，允许科研人员通过自然语言与结构化化学数据库进行逻辑对话。</p>
-                </div>
-            </div>
-        </section>
-
-        <section class="section-padding">
-            <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 100px;">
-                <div>
-                    <span class="label">02 / System Metrics</span>
-                    <p style="font-size: 18px; line-height: 1.4;">系统在大规模分子检索场景下表现出很好的响应一致性与数据准确度。</p>
-                </div>
-                <table class="metrics-table">
-                    <tr><td>向量检索响应延迟 / Vector Retrieval Latency</td><td>&lt; 50ms</td></tr>
-                    <tr><td>分子性质预测准确度 / Property Prediction (R²)</td><td>0.92+</td></tr>
-                    <tr><td>结构化数据覆盖率 / Data Normalization Rate</td><td>99.8%</td></tr>
-                    <tr><td>API 吞吐量 / System Throughput</td><td>10k req/s</td></tr>
-                </table>
-            </div>
-        </section>
-
-        <section class="section-padding">
-            <span class="label">03 / Development Timeline</span>
-            <div class="timeline">
-                <div class="time-node">
-                    <span class="date">2026 Q1</span>
-                    <div class="event">项目团队组建与技术架构选型</div>
-                </div>
-                <div class="time-node">
-                    <span class="date">2026 Q2</span>
-                    <div class="event">多模态数据库原型开发与机器学习集成</div>
-                </div>
-                <div class="time-node">
-                    <span class="date">2026 Q3</span>
-                    <div class="event">RAG 语义引擎集成与内测开启</div>
-                </div>
-                <div class="time-node" style="border-right: 1px solid #000;">
-                    <span class="date">2026 Q4</span>
-                    <div class="event">MolScience 平台最终测试与发布准备</div>
-                </div>
-            </div>
-        </section>
-
-        <section class="section-padding" style="border-bottom: none;">
-            <p style="font-size: 42px; font-weight: 700; letter-spacing: -2px; line-height: 1.2; max-width: 1000px;">
-                “我们不只是在存储数据，而是在构建一个具备专业逻辑的化学大脑。让数据成为燃料，让 AI 成为发现的导师。”
-            </p>
-        </section>
-
-        <footer>
+    <footer class="footer">
+        <div class="shell footer-inner">
             <div>
                 <p>© 2026 MolScience Team</p>
-                <p style="color: #888; margin-top: 5px;">Built with logic and integrity.</p>
+                <p data-i18n="footerTagline">Built for AI-native molecular discovery.</p>
             </div>
             <ul class="footer-links">
-                <li><a href="https://docs.molscience.org">Documentation</a></li>
-                <li>Research Paper</li>
+                <li><a href="#platform" data-i18n="footerPlatform">Platform</a></li>
+                <li><a href="#architecture" data-i18n="footerArchitecture">Architecture</a></li>
                 <li><a href="mailto:team@molscience.org">Contact</a></li>
             </ul>
-        </footer>
-    </div>
+        </div>
+    </footer>
+    <script>
+        const translations = {
+            zh: {
+                pageTitle: "MolScience | AI 原生分子数据库基础设施",
+                brandHome: "MolScience 首页",
+                mainNav: "主导航",
+                languageToggle: "语言切换",
+                navPlatform: "平台",
+                navArchitecture: "架构",
+                navCapabilities: "能力",
+                heroEyebrow: "AI-Native Molecular Database",
+                heroCopy: "面向人工智能时代的化学分子数据库基础设施。项目围绕“数据、模型、应用”三位一体，推动分子数据库从传统数据存储工具升级为智能知识引擎。",
+                heroPrimary: "了解项目",
+                heroSecondary: "查看架构",
+                heroPanelLabel: "MolScience 数据库架构示意",
+                queryPrompt: "寻找可解释、可建模、可检索的候选分子",
+                nodeStructured: "结构化属性检索",
+                nodeGraph: "反应网络与合成路径",
+                nodeVector: "语义相似性搜索",
+                nodeRag: "RAG 化学问答",
+                labelProjectBase: "01 / Project Base",
+                projectTitle: "自主可控、标准化、可扩展的分子数据底座。",
+                projectIntro: "MolScience 由中国人民大学化学与生命资源学院本科生团队发起，已完成初步平台开发，持续建设面向科研社区的 AI 原生化学数据基础设施。",
+                metricMoleculesValue: "1.2亿",
+                metricMolecules: "分子数据基础，面向大规模检索与建模任务。",
+                metricCodeValue: "4万+",
+                metricCode: "代码实现，覆盖平台、检索、管理与算法能力。",
+                metricDatabases: "全球分子数据库调研，形成评价体系与学术基础。",
+                metricTeamValue: "5名",
+                metricTeam: "化学专业本科生组成核心团队，兼具科研与工程能力。",
+                labelResearchProblem: "02 / Research Problem",
+                problemTitle: "现有分子数据库仍主要服务“人用工具”，难以承载 AI 科研范式。",
+                problemIntro: "化学研究正在进入数据密集型科学发现阶段。高质量分子数据与高效数据库，正在成为 AI for Science 的基础设施。",
+                problemArchitectureTitle: "架构单一",
+                problemArchitectureText: "传统关系型数据库难以同时支持图结构、向量检索与 AI 任务所需的多模态数据组织。",
+                problemQualityTitle: "标准不一",
+                problemQualityText: "多源分子数据在命名、结构表示、缺失值与异常值上存在治理难题，影响模型训练质量。",
+                problemAiTitle: "智能化缺失",
+                problemAiText: "依赖精确匹配的检索方式无法支持自然语言查询、语义搜索与大模型工具调用。",
+                labelArchitecture: "03 / Architecture",
+                architectureTitle: "多数据库协同架构，同时支持精确查询、关系分析与语义检索。",
+                architectureIntro: "项目以关系型数据库、图数据库、向量数据库协同工作，突破单一数据库模式，为分子性质预测、相似性搜索、反向设计与合成路径分析提供统一底座。",
+                relationalTitle: "结构化属性",
+                relationalItem1: "分子式、分子量、物理化学性质",
+                relationalItem2: "SMILES / InChI 标准化表示",
+                relationalItem3: "高效筛选与精确条件查询",
+                graphTitle: "反应网络",
+                graphItem1: "表示反应关系与合成路径",
+                graphItem2: "支撑路径规划与关系推理",
+                graphItem3: "连接分子、反应、文献与知识节点",
+                vectorTitle: "语义检索",
+                vectorItem1: "支持分子相似性搜索",
+                vectorItem2: "连接大模型 RAG 问答",
+                vectorItem3: "为智能推荐与候选分子发现提供索引",
+                labelPipeline: "04 / Pipeline",
+                pipelineTitle: "从数据治理到模型应用，构建可持续利用的完整链条。",
+                pipelineIntro: "MolScience 不止存储分子数据，还围绕清洗、特征、建模、应用与自然语言交互建立闭环，让数据库成为可被 AI 调用的知识引擎。",
+                flowDataTitle: "数据整合",
+                flowDataText: "整合 PubChem、文献等多源数据，统一分子结构与属性字段。",
+                flowGovernanceTitle: "标准治理",
+                flowGovernanceText: "完成去重、缺失值处理、异常检测，以及盐离子与溶剂等结构清理。",
+                flowModelTitle: "分子建模",
+                flowModelText: "结合描述符、分子指纹、分子图表示与 GNN 等模型进行性质预测。",
+                flowInteractionTitle: "智能交互",
+                flowInteractionText: "通过 RAG、向量检索和工具调用，探索问答式化学数据库体验。",
+                labelValue: "05 / Value",
+                valueTitle: "服务科研基础设施、数据主权与 AI 化学前沿探索。",
+                valueScienceTitle: "科研基础设施",
+                valueScienceText: "提供国产分子数据底座，支撑 AI for Science、虚拟筛选与分子设计任务。",
+                valueSovereigntyTitle: "数据主权",
+                valueSovereigntyText: "降低对国外核心数据库的依赖，提升科研数据连续性与自主可控能力。",
+                valueFrontierTitle: "技术前沿",
+                valueFrontierText: "探索数据库、机器学习、图结构与大模型融合的新型科研平台范式。",
+                labelVision: "Long-term Vision",
+                visionStatement: "构建面向全球科研社区的开放化学数据基础设施，连接<span>分子数据、人工智能与科学发现</span>。",
+                footerTagline: "Built for AI-native molecular discovery.",
+                footerPlatform: "Platform",
+                footerArchitecture: "Architecture"
+            },
+            en: {
+                pageTitle: "MolScience | AI-Native Molecular Database Infrastructure",
+                brandHome: "MolScience home",
+                mainNav: "Primary navigation",
+                languageToggle: "Language switcher",
+                navPlatform: "Platform",
+                navArchitecture: "Architecture",
+                navCapabilities: "Capabilities",
+                heroEyebrow: "AI-Native Molecular Database",
+                heroCopy: "Molecular database infrastructure for the age of artificial intelligence. MolScience connects data, models, and applications to evolve molecular databases from passive storage tools into intelligent knowledge engines.",
+                heroPrimary: "Explore project",
+                heroSecondary: "View architecture",
+                heroPanelLabel: "MolScience database architecture diagram",
+                queryPrompt: "Find candidate molecules that are explainable, model-ready, and searchable",
+                nodeStructured: "Structured property retrieval",
+                nodeGraph: "Reaction networks and synthesis routes",
+                nodeVector: "Semantic similarity search",
+                nodeRag: "RAG chemistry Q&A",
+                labelProjectBase: "01 / Project Base",
+                projectTitle: "A sovereign, standardized, and extensible foundation for molecular data.",
+                projectIntro: "MolScience was initiated by an undergraduate team from the School of Chemistry and Life Resources at Renmin University of China. The initial platform has been built and continues to evolve as AI-native chemistry data infrastructure for the research community.",
+                metricMoleculesValue: "120M",
+                metricMolecules: "Molecular data foundation for large-scale retrieval and modeling.",
+                metricCodeValue: "40K+",
+                metricCode: "Lines of implementation across platform, retrieval, management, and algorithmic capabilities.",
+                metricDatabases: "Global molecular databases surveyed to build an evaluation framework and academic base.",
+                metricTeamValue: "5",
+                metricTeam: "Chemistry undergraduates forming the core team with both research and engineering capabilities.",
+                labelResearchProblem: "02 / Research Problem",
+                problemTitle: "Most molecular databases still work as human-facing tools, not AI-native research systems.",
+                problemIntro: "Chemistry is entering a data-intensive discovery paradigm. High-quality molecular data plus efficient databases are becoming core infrastructure for AI for Science.",
+                problemArchitectureTitle: "Single architecture",
+                problemArchitectureText: "Traditional relational databases struggle to support graph structures, vector retrieval, and multimodal organization required by AI tasks at the same time.",
+                problemQualityTitle: "Inconsistent standards",
+                problemQualityText: "Multi-source molecular data brings governance challenges across naming, structure representation, missing values, and outliers, directly affecting model quality.",
+                problemAiTitle: "Missing intelligence",
+                problemAiText: "Exact-match retrieval cannot support natural-language queries, semantic search, or tool calling with large language models.",
+                labelArchitecture: "03 / Architecture",
+                architectureTitle: "A collaborative multi-database architecture for exact queries, relational analysis, and semantic retrieval.",
+                architectureIntro: "MolScience combines relational, graph, and vector databases to move beyond a single-database model and provide a unified base for property prediction, similarity search, inverse design, and synthesis route analysis.",
+                relationalTitle: "Structured properties",
+                relationalItem1: "Molecular formula, molecular weight, and physicochemical properties",
+                relationalItem2: "Standardized SMILES / InChI representation",
+                relationalItem3: "Efficient filtering and exact condition queries",
+                graphTitle: "Reaction networks",
+                graphItem1: "Represent reaction relationships and synthesis routes",
+                graphItem2: "Support route planning and relational reasoning",
+                graphItem3: "Connect molecules, reactions, literature, and knowledge nodes",
+                vectorTitle: "Semantic retrieval",
+                vectorItem1: "Support molecular similarity search",
+                vectorItem2: "Connect large-model RAG Q&A",
+                vectorItem3: "Index candidate discovery and intelligent recommendations",
+                labelPipeline: "04 / Pipeline",
+                pipelineTitle: "A complete chain from data governance to model-driven applications.",
+                pipelineIntro: "MolScience does more than store molecular data. It builds a loop around cleaning, features, modeling, applications, and natural-language interaction so the database can become a knowledge engine callable by AI.",
+                flowDataTitle: "Data integration",
+                flowDataText: "Integrate PubChem, literature, and other sources while unifying molecular structures and property fields.",
+                flowGovernanceTitle: "Standard governance",
+                flowGovernanceText: "Handle deduplication, missing values, anomaly detection, and cleanup of salts, solvents, and non-core structures.",
+                flowModelTitle: "Molecular modeling",
+                flowModelText: "Use descriptors, molecular fingerprints, molecular graph representations, and GNN models for property prediction.",
+                flowInteractionTitle: "Intelligent interaction",
+                flowInteractionText: "Explore a conversational chemistry database through RAG, vector retrieval, and tool calling.",
+                labelValue: "05 / Value",
+                valueTitle: "Serving research infrastructure, data sovereignty, and the frontier of AI chemistry.",
+                valueScienceTitle: "Research infrastructure",
+                valueScienceText: "Provide a domestic molecular data foundation for AI for Science, virtual screening, and molecular design.",
+                valueSovereigntyTitle: "Data sovereignty",
+                valueSovereigntyText: "Reduce dependence on foreign core databases and improve continuity and autonomy in scientific research data.",
+                valueFrontierTitle: "Technical frontier",
+                valueFrontierText: "Explore a new research platform paradigm that fuses databases, machine learning, graph structures, and large models.",
+                labelVision: "Long-term Vision",
+                visionStatement: "Build open chemistry data infrastructure for the global research community, connecting <span>molecular data, artificial intelligence, and scientific discovery</span>.",
+                footerTagline: "Built for AI-native molecular discovery.",
+                footerPlatform: "Platform",
+                footerArchitecture: "Architecture"
+            }
+        };
 
+        const applyLanguage = (language) => {
+            const dictionary = translations[language] || translations.zh;
+            document.documentElement.lang = language === "en" ? "en" : "zh-CN";
+            document.title = dictionary.pageTitle;
+
+            document.querySelectorAll("[data-i18n]").forEach((element) => {
+                const key = element.dataset.i18n;
+                if (dictionary[key]) {
+                    element.textContent = dictionary[key];
+                }
+            });
+
+            document.querySelectorAll("[data-i18n-html]").forEach((element) => {
+                const key = element.dataset.i18nHtml;
+                if (dictionary[key]) {
+                    element.innerHTML = dictionary[key];
+                }
+            });
+
+            document.querySelectorAll("[data-i18n-attr]").forEach((element) => {
+                element.dataset.i18nAttr.split(",").forEach((mapping) => {
+                    const [attribute, key] = mapping.split(":").map((item) => item.trim());
+                    if (attribute && dictionary[key]) {
+                        element.setAttribute(attribute, dictionary[key]);
+                    }
+                });
+            });
+
+            document.querySelectorAll("[data-lang]").forEach((button) => {
+                button.setAttribute("aria-pressed", String(button.dataset.lang === language));
+            });
+
+            localStorage.setItem("molscience-language", language);
+        };
+
+        document.querySelectorAll("[data-lang]").forEach((button) => {
+            button.addEventListener("click", () => applyLanguage(button.dataset.lang));
+        });
+
+        const savedLanguage = localStorage.getItem("molscience-language");
+        const browserLanguage = navigator.language && navigator.language.toLowerCase().startsWith("en") ? "en" : "zh";
+        applyLanguage(savedLanguage || browserLanguage);
+    </script>
 </body>
 </html>
