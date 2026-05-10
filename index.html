@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/x-icon" href="https://s.guyue.me/img/icon_molscience.png">
     <title>MolScience | AI 原生分子数据库基础设施</title>
+    <script>
+        (() => {
+            const savedTheme = localStorage.getItem("molscience-theme");
+            document.documentElement.dataset.theme = savedTheme || "system";
+        })();
+    </script>
     <style>
         @font-face {
             font-family: "Inter";
@@ -95,10 +101,12 @@
         }
 
         :root {
+            color-scheme: dark;
             --bg: #171717;
             --bg-deep: #0f0f0f;
             --surface: rgba(41, 41, 41, 0.84);
             --surface-soft: hsla(210, 87.8%, 16.1%, 0.031);
+            --header-bg: rgba(23, 23, 23, 0.88);
             --text: #fafafa;
             --text-secondary: #b4b4b4;
             --text-muted: #898989;
@@ -111,6 +119,44 @@
             --font-sans: Inter, "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
             --font-display: "Inter Tight", Inter, "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
             --font-mono: "JetBrains Mono", "Cascadia Mono", "Source Code Pro", Menlo, Consolas, monospace;
+        }
+
+        [data-theme="light"] {
+            color-scheme: light;
+            --bg: #f8f8f6;
+            --bg-deep: #ffffff;
+            --surface: rgba(255, 255, 255, 0.86);
+            --surface-soft: rgba(21, 128, 85, 0.035);
+            --header-bg: rgba(248, 248, 246, 0.88);
+            --text: #171717;
+            --text-secondary: #444444;
+            --text-muted: #707070;
+            --border-subtle: #e7e4df;
+            --border: #d8d5ce;
+            --border-strong: #c9c5bd;
+            --green: #0b9f68;
+            --green-link: #047a4f;
+            --green-border: rgba(11, 159, 104, 0.32);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root:not([data-theme="dark"]) {
+                color-scheme: light;
+                --bg: #f8f8f6;
+                --bg-deep: #ffffff;
+                --surface: rgba(255, 255, 255, 0.86);
+                --surface-soft: rgba(21, 128, 85, 0.035);
+                --header-bg: rgba(248, 248, 246, 0.88);
+                --text: #171717;
+                --text-secondary: #444444;
+                --text-muted: #707070;
+                --border-subtle: #e7e4df;
+                --border: #d8d5ce;
+                --border-strong: #c9c5bd;
+                --green: #0b9f68;
+                --green-link: #047a4f;
+                --green-border: rgba(11, 159, 104, 0.32);
+            }
         }
 
         * {
@@ -149,7 +195,7 @@
             position: sticky;
             top: 0;
             z-index: 10;
-            background: rgba(23, 23, 23, 0.88);
+            background: var(--header-bg);
             border-bottom: 1px solid var(--border-subtle);
             backdrop-filter: blur(16px);
         }
@@ -199,7 +245,15 @@
             color: var(--text);
         }
 
-        .language-toggle {
+        .nav-tools {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .language-toggle,
+        .theme-toggle {
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -210,7 +264,8 @@
             background: var(--bg-deep);
         }
 
-        .language-toggle button {
+        .language-toggle button,
+        .theme-toggle button {
             min-width: 34px;
             min-height: 22px;
             padding: 3px 8px;
@@ -227,12 +282,33 @@
             text-transform: uppercase;
         }
 
+        .theme-toggle button {
+            display: grid;
+            place-items: center;
+            min-width: 28px;
+            width: 28px;
+            padding: 3px;
+            letter-spacing: 0;
+        }
+
+        .theme-toggle svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+
+        .theme-toggle button[aria-pressed="true"],
         .language-toggle button[aria-pressed="true"] {
             border-color: var(--green-border);
             color: var(--text);
             font-weight: 500;
         }
 
+        .theme-toggle button:focus-visible,
         .language-toggle button:focus-visible {
             outline: 1px solid var(--green);
             outline-offset: 2px;
@@ -393,7 +469,7 @@
             padding: 14px;
             border: 1px solid var(--border);
             border-radius: 8px;
-            background: #171717;
+            background: var(--bg);
         }
 
         .node-icon {
@@ -700,10 +776,16 @@
 
             .nav-links {
                 width: 100%;
-                justify-content: space-between;
+                justify-content: flex-start;
                 gap: 12px;
+                flex-wrap: wrap;
                 overflow-x: auto;
                 padding-bottom: 2px;
+            }
+
+            .nav-tools {
+                width: 100%;
+                justify-content: flex-start;
             }
 
             .hero {
@@ -795,11 +877,32 @@
                 <a href="#platform" data-i18n="navPlatform">平台</a>
                 <a href="#architecture" data-i18n="navArchitecture">架构</a>
                 <a href="#pipeline" data-i18n="navCapabilities">能力</a>
-                <div class="language-toggle" aria-label="语言切换" data-i18n-attr="aria-label:languageToggle">
-                    <button type="button" data-lang="zh" aria-pressed="true">中</button>
-                    <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                <div class="nav-tools">
+                    <div class="theme-toggle" aria-label="主题切换" data-i18n-attr="aria-label:themeToggle">
+                        <button type="button" data-theme-choice="dark" aria-pressed="false" aria-label="黑暗" title="黑暗" data-i18n-attr="aria-label:themeDark,title:themeDark">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M20.2 14.2A7.6 7.6 0 0 1 9.8 3.8 8.2 8.2 0 1 0 20.2 14.2Z"></path>
+                            </svg>
+                        </button>
+                        <button type="button" data-theme-choice="light" aria-pressed="false" aria-label="明亮" title="明亮" data-i18n-attr="aria-label:themeLight,title:themeLight">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="4"></circle>
+                                <path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"></path>
+                            </svg>
+                        </button>
+                        <button type="button" data-theme-choice="system" aria-pressed="true" aria-label="跟随系统" title="跟随系统" data-i18n-attr="aria-label:themeSystem,title:themeSystem">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="4" y="5" width="16" height="11" rx="2"></rect>
+                                <path d="M9 20h6M12 16v4"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="language-toggle" aria-label="语言切换" data-i18n-attr="aria-label:languageToggle">
+                        <button type="button" data-lang="zh" aria-pressed="true">中</button>
+                        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                    </div>
+                    <a class="button primary" href="mailto:team@molscience.org">Contact</a>
                 </div>
-                <a class="button primary" href="mailto:team@molscience.org">Contact</a>
             </nav>
         </div>
     </header>
@@ -1063,6 +1166,10 @@
                 brandHome: "MolScience 首页",
                 mainNav: "主导航",
                 languageToggle: "语言切换",
+                themeToggle: "主题切换",
+                themeDark: "黑暗",
+                themeLight: "明亮",
+                themeSystem: "跟随系统",
                 navPlatform: "平台",
                 navArchitecture: "架构",
                 navCapabilities: "能力",
@@ -1140,6 +1247,10 @@
                 brandHome: "MolScience home",
                 mainNav: "Primary navigation",
                 languageToggle: "Language switcher",
+                themeToggle: "Theme switcher",
+                themeDark: "Dark",
+                themeLight: "Light",
+                themeSystem: "System",
                 navPlatform: "Platform",
                 navArchitecture: "Architecture",
                 navCapabilities: "Capabilities",
@@ -1253,8 +1364,28 @@
             button.addEventListener("click", () => applyLanguage(button.dataset.lang));
         });
 
+        const themeButtons = document.querySelectorAll("[data-theme-choice]");
+
+        const updateThemeButtons = (theme) => {
+            themeButtons.forEach((button) => {
+                button.setAttribute("aria-pressed", String(button.dataset.themeChoice === theme));
+            });
+        };
+
+        const applyTheme = (theme) => {
+            const selectedTheme = ["dark", "light", "system"].includes(theme) ? theme : "system";
+            document.documentElement.dataset.theme = selectedTheme;
+            localStorage.setItem("molscience-theme", selectedTheme);
+            updateThemeButtons(selectedTheme);
+        };
+
+        themeButtons.forEach((button) => {
+            button.addEventListener("click", () => applyTheme(button.dataset.themeChoice));
+        });
+
         const savedLanguage = localStorage.getItem("molscience-language");
         const browserLanguage = navigator.language && navigator.language.toLowerCase().startsWith("en") ? "en" : "zh";
+        applyTheme(localStorage.getItem("molscience-theme") || "system");
         applyLanguage(savedLanguage || browserLanguage);
     </script>
 </body>
