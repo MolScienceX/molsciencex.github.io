@@ -1,562 +1,255 @@
-# MolScience 分子数据库前端设计规范
-
-> 文档版本：Phase 1.0 设计定稿
-> 最后更新：2026-08-01
-> 实现分支：`dev-1.0`
-
-## 1. 产品定位
-
-MolScience 第一阶段是以分子检索为核心的科研数据产品。目标不是展示平台概念，而是完成一个可信、清晰、可追溯的工作闭环：
-
-```text
-检索 → 结果 → 分子详情 → 实验记录 → 数据来源
-```
-
-用户应当能够回答：
-
-1. 当前记录对应哪个分子；
-2. 平台为什么推荐某个实验值；
-3. 还有哪些实验值、实验条件和数据类型；
-4. 每条数据来自哪个数据库、文献或贡献记录。
-
-Phase 1.0 只使用实验值作为性质推荐候选。计算值和机器学习预测值不得混入实验推荐值。
-
-## 2. 技术方案
-
-- React
-- TypeScript
-- Vite
-- React Router
-- CSS Variables 与原生 CSS
-- Django 或等价服务提供后端 API
-- 前后端通过稳定的分子 ID 与版本化数据接口关联
-
-当前前端使用演示数据验证信息架构和交互。接入后端时保持路由、页面层级和主要交互不变，将本地数据替换为 API 请求。
-
-## 3. 视觉原则
-
-整体风格：
-
-> 科研数据库门户 × 高可信数据出版物 × 现代检索工具
-
-参考组合：
-
-- 首页：PubChem 的任务组织 + AlphaFold DB 的浅色视觉和字号
-- 平台介绍页：AlphaFold About + 编辑式文档首页
-- 检索结果页：UniProt 的筛选方式 + ChEBI 的分子摘要
-- 分子详情页：PubChem 的章节导航 + NIST 的实验值表格
-- 来源体系：NIST 的实验条件与文献表达 + ChEMBL 的实体关联
-- 未来预测模块：Materials Project 的图表和实验/计算状态区分
-
-设计要求：
-
-- 日间主题以黑、白、灰为基础色，冷蓝紫为强调色；
-- 提供日间与夜间主题切换，首次访问跟随系统偏好，用户选择保存在浏览器本地；
-- 夜间主题使用深蓝灰背景和高对比度文字，不使用纯黑大面积铺底；
-- 分子结构图、谱图和结构编辑器保留独立的浅色科研绘图画布，不对化学图像做简单反色；
-- 页面主要通过排版、分隔线、列表和表格建立层级；
-- 避免卡片墙、过度圆角、胶囊标签和装饰性渐变；
-- 搜索框、弹窗和必要的交互容器可以使用轻微阴影；
-- 正文使用 16–17px，分区正文使用 17–18px；
-- 首页主标题使用 56–60px，平台介绍页主标题使用 50–68px；
-- 结果页查询词使用 34–38px，结果名称使用 23–24px；
-- 详情页分子名称使用 40–48px，详情分区标题使用 28–32px；
-- SMILES、InChI、InChIKey、CAS、分子式和数值使用等宽字体；
-- Logo 使用用户提供的 MolScience 图标，不改变图形与颜色。
-
-详情页正文以可读性优先：正文约 17px，表格与数据记录正文不低于 15px，灰色辅助标签约 14–15px，并使用足够深的灰色保证对比度。除 CAS、SMILES、InChI、InChIKey、IUPAC 等标准缩写和专有名词外，英文标签不使用全大写；普通单词采用句首字母大写或标准标题格式。
-
-## 4. 全局导航
-
-顶部导航包含：
-
-- MolScience Logo 与平台名称
-- 分子数据库
-- 平台介绍
-- 文档
-- 日间 / 夜间模式
-- 中 / EN
-
-除数据库首页和平台介绍页外，其他页面在顶部保留紧凑搜索框。
-
-中英双语切换保存在浏览器本地。分子式、CAS、SMILES、InChI、InChIKey 和单位不翻译。
-
-## 5. 数据库首页 `/`
-
-### 5.1 页面目标
-
-搜索是首页第一视觉中心。首屏不使用平台愿景、团队介绍或功能卡片抢占搜索任务。
-
-### 5.2 页面结构
-
-```text
-顶部导航
-核心检索
-最近新增数据
-化学前沿精选
-页脚
-```
-
-### 5.3 核心检索
-
-支持：
-
-- 分子名称
-- 别名
-- CAS
-- 分子式
-- SMILES
-- InChI
-- InChIKey
-
-前端不提供输入类型选择器，由后端自动识别输入格式。
-
-搜索框一级操作：
-
-- 画结构
-- 上传 ID 文件
-- 搜索
-
-搜索框辅助入口：
-
-- 示例搜索
-- 高级检索
-- 搜索历史
-- 如何检索
-
-桌面端搜索栏不铺满内容区，最大宽度控制在约 1080px，并与标题左边界对齐。绘制结构、ID 文件和搜索按钮保持紧凑，避免工具区挤压主输入区域。
-
-结构绘制在 Phase 1.0 只执行精确结构检索。子结构、超结构和相似性搜索属于 Phase 2.0。
-
-ID 文件第一阶段支持 MolScience ID、CAS、InChIKey 和 PubChem CID 的读取、去重、格式检查与匹配预览。批量查询结果需要区分成功、未匹配和格式错误记录。
-
-### 5.4 最近新增数据
-
-核心检索下方展示最近通过审核并进入 MolScience 的分子或数据变更。列表使用紧凑行式布局，不制作卡片墙，并区分：
-
-- 新收录分子；
-- 新增实验记录；
-- 新增谱学数据；
-- 来源更新；
-- 数据修正。
-
-最近新增必须来自后端的审核入库时间和变更类型，不得把论文发表时间当作平台入库时间。当前演示数据没有可靠入库时间，因此必须明确标注为“预览数据”，不能伪造日期；接入数据服务后再切换为自动更新的真实记录。
-
-### 5.5 化学前沿精选
-
-首页下部展示近期化学研究精选，定位为科研内容入口而不是泛行业新闻。内容集中在分子 AI、合成与催化、光谱与分析、实验物性、能源材料、化学数据标准等与 MolScience 相关的方向。
-
-每条内容包括研究方向标签、准确的中英文标题、来源、发布日期、DOI 或原始论文链接、自主编写的简短摘要，以及同行评审、开放获取或预印本状态。
-
-首页展示四条等权内容，不使用轮播。桌面端采用 2×2 编辑式网格，移动端改为单列；首条内容只使用“本期重点”标签，不放大卡片。候选内容可以通过期刊元数据、Crossref、ChemRxiv RSS 或 API 获取，但发布前必须经过筛选和摘要审核；预印本必须显著标记为未经同行评审。不得复制受版权保护的摘要或未经授权使用期刊配图。
-
-平台、团队、使用指南和贡献指南只保留在平台介绍页，不再作为首页检索后的四个主入口。
-
-真实统计接口就绪后，可以在核心检索和最近新增之间加入数据总览栏，展示收录分子数、实验记录数、谱学记录数、来源数、最近更新时间和统计口径；后端未就绪时整段隐藏，不展示虚构数字。
-
-## 6. 平台介绍页 `/about`
-
-### 6.1 页面定位
-
-平台介绍页同时承担 About、团队、使用指南、贡献指南和联系方式入口的职责，不创建独立团队页面。
-
-### 6.2 首屏
-
-首屏固定文案方向：
-
-```text
-ABOUT MOLSCIENCE
-
-MolScience
-连接分子、实验数据与可信来源
-```
-
-辅助说明介绍 MolScience 对分子标识符、实验物性、谱学信息和来源的整理目标。
-
-首屏操作：
-
-- 了解平台
-- 开始检索
-
-### 6.3 页面结构
-
-```text
-编辑式大标题首屏
-四个章节入口
-为什么建设 MolScience
-四项数据原则
-当前建设阶段
-核心团队
-使用指南
-贡献指南
-窄版黑色联系区
-```
-
-四个章节入口：
-
-1. 认识 MolScience
-2. 了解项目团队
-3. 阅读使用指南
-4. 参与数据贡献
-
-页面不使用左侧固定目录。四个入口采用扁平分栏，不做圆角卡片墙。
-
-正文各章节采用较窄的左侧标题栏与较宽的右侧内容区：桌面端左栏约 240px，标题字号约 30px，减少标题区对正文宽度的占用。入口与数据原则中的 `01 / 02 / 03 / 04` 编号继续使用冷蓝色，字号适度放大并提高字重，但不改为黑色。
-
-### 6.4 平台内容
-
-平台介绍说明：
-
-- 数据分散；
-- 分子名称和标识符不统一；
-- 同一性质存在多个实验数值；
-- 数值常脱离实验条件与来源；
-- 用户难以判断推荐值。
-
-四项数据原则：
-
-1. 统一分子标识符；
-2. 保留完整实验条件；
-3. 展示推荐值与全部记录；
-4. 建立数据与来源的追溯关系。
-
-### 6.5 团队
-
-第一版只展示核心团队。正式姓名、角色、机构和照片由团队统一补充。
-
-在真实资料提供前：
-
-- 保留团队章节与入口；
-- 使用职责方向说明；
-- 明确成员资料将在正式发布前更新；
-- 不使用虚构姓名、头像、机构或履历。
-
-### 6.6 使用、贡献与联系
-
-使用指南展示：
-
-```text
-输入查询 → 查看结果 → 进入详情 → 比较实验值 → 核查来源
-```
-
-贡献范围：
-
-- 分子记录与标识符
-- 实验物性与实验条件
-- 谱学记录
-- 数据来源
-- 错误修正
-- 文档与代码
-
-贡献流程：
-
-```text
-提交信息 → 格式检查 → 来源核验 → 科研审核 → 发布并保留贡献记录
-```
-
-联系区使用窄版黑色横向布局，展示项目邮箱、GitHub、所属机构、数据与使用声明。真实地址未提供前显示“待公布”，不创建虚构链接。
-
-## 7. 检索结果页 `/search?q=...`
-
-### 7.1 页面目标
-
-帮助用户快速判断：
-
-- 是否为目标分子；
-- 查询为什么命中；
-- 该分子拥有哪些可用数据。
-
-### 7.2 页面结构
-
-桌面端使用：
-
-```text
-查询摘要
-左侧扁平筛选栏 | 右侧分子列表
-```
-
-筛选栏不是卡片：
-
-- 与页面使用相同背景；
-- 无圆角、阴影和外围边框；
-- 组间使用细横线；
-- 与结果区使用浅灰竖线分隔；
-- 选项右侧显示结果数量。
-
-移动端将筛选收进可展开区域。
-
-### 7.3 查询摘要
-
-展示：
-
-- 原始查询词
-- 输入识别类型
-- 结果数量
-- 当前排序方式
-- 清除筛选
-
-输入唯一且精确匹配 MolScience ID、InChIKey 或其他已确认唯一的标识符时，可以直接进入详情页。无法确认唯一性时进入结果页。
-
-### 7.4 第一版筛选
-
-数据可用性：
-
-- 有实验物性
-- 有谱学数据
-- 有安全信息
-- 有明确来源
-
-排序：
-
-- 相关度
-- 数据完整度
-- 来源数量
-- 分子名称
-
-分子量范围、元素组成、复杂性质范围进入高级检索。子结构和相似性不属于第一版结果筛选。
-
-### 7.5 结果条目
-
-结果使用横向扁平列表和分隔线，不使用独立圆角卡片。
-
-每条结果包含：
-
-- 二维键线式结构图
-- 中文推荐名称
-- 英文或 IUPAC 名称
-- 主要别名，结果页最多展示 2–4 个
-- MolScience ID
-- 分子式
-- 相对分子质量
-- CAS
-- Canonical SMILES
-- InChIKey
-- 命中原因
-- 实验物性、谱学、安全和来源覆盖情况
-- 查看详情入口
-
-检索结果摘要以确认分子身份为目标，不展示熔点、沸点、密度或其他实验物性推荐值。InChI 和 Isomeric SMILES 等较长字段留在详情页；结果页只保留数据覆盖数量，不展开具体物性数值。
-
-## 8. 分子详情页 `/molecule/:id/:inchikey`
-
-### 8.1 页面结构
-
-```text
-左侧章节导航 | 右侧连续数据文档
-               分子名称与操作
-               二维结构与身份摘要
-               身份字段摘要
-               分子标识符
-               数值物性
-               谱学物性
-               安全属性
-               来源及其他信息
-```
-
-章节：
-
-1. 概览
-2. 分子标识符
-3. 数值物性
-4. 谱学物性
-5. 安全属性
-6. 来源及其他信息
-
-详情页参考 PubChem 的信息组织方式，但不复制其粗边框和青色视觉。桌面端从详情内容顶部开始使用约 230px 的左侧固定章节导航，右侧作为连续数据文档；分子身份摘要、二维结构和关键性质不再作为横跨整页的独立大首屏。左侧目录根据页面滚动位置高亮当前章节，点击目录后需要预留顶部固定导航高度，保证章节标题不被遮挡。移动端改为可横向滚动的分区导航，并同步显示当前章节。
-
-右侧顶部摘要使用扁平信息行组织 MolScience ID、分子式、相对分子质量、CAS、主要别名和安全摘要；二维键线式保持醒目。Phase 1.0 只展示二维结构，不展示 3D 或晶体结构。
-
-### 8.2 二维结构式
-
-顶部必须突出展示二维化学键线式结构：
-
-- 优先使用 SVG；
-- 正确显示单双键、芳香键、楔形键和立体化学；
-- 保留电荷、同位素、自由基等标记；
-- 盐、溶剂化物和多组分体系完整呈现；
-- 自动居中并适配分子尺寸；
-- 支持放大；
-- 后续支持下载结构图、MOL 和 SDF；
-- 无结构数据时显示“暂无结构图”；
-- Phase 1.0 不使用三维球棍模型替代。
-
-### 8.3 顶部身份摘要与数值物性
-
-详情页顶部不设置四项大号物性概览。顶部只承担分子身份确认，展示二维结构、推荐名称、IUPAC 名称、主要别名、MolScience ID、分子式、相对分子质量、CAS、Canonical SMILES 和 InChIKey。分子式、相对分子质量、CAS 与 InChIKey 在同一身份栏中并列展示，相对分子质量不单独占据整行。
-
-熔点、沸点、密度以及其他实验性质全部进入“数值物性”章节。密度必须显示温度等实验条件。
-
-详情章节标题前的 `01 / 02 / 03...` 编号继续使用冷蓝色，桌面端字号约 16px 并提高字重，使编号与大标题形成清晰但不过度突出的层级。
-
-每项实验性质在数值物性章节显示：
-
-- 平台推荐实验值
-- 推荐条件
-- 原始记录数量
-- 数据来源数量
-
-物性名称与推荐数值使用相同字号，桌面端约 20px；推荐值通过字重而不是更大字号建立强调，避免数值压过物性名称、条件和来源。
-
-缺少可靠实验值时显示“暂无实验值”，不得用预测值填充。
-
-### 8.4 多值实验记录
-
-每项性质先显示平台推荐值，并提供“查看全部实验记录”。
-
-全部记录在当前页面内联展开，不使用弹窗。表格至少包含：
-
-| 字段 | 说明 |
-|---|---|
-| 数值 | 原始或标准化实验值 |
-| 单位 | 标准单位并保留原单位 |
-| 温度 | 实验温度 |
-| 压力 | 实验压力 |
-| 相态 | 固、液、气、溶液等 |
-| 数据类型 | Phase 1.0 为实验值 |
-| 方法 | 测量或实验方法 |
-| 来源 | 数据库、文献或贡献记录 |
-| 质量 | 推荐状态、质量等级或评分说明 |
-
-推荐值可以综合考虑来源可靠性、实验条件完整度、单位规范、审核状态、多来源一致性和时效性。推荐值由后端计算，前端只负责展示结果和解释。
-
-### 8.5 谱学、安全与来源
-
-谱学类型：
-
-- ¹H NMR
-- ¹³C NMR
-- 2D NMR
-- IR
-- UV/Vis
-- Raman
-- 质谱
-
-有结构化数据时展示图谱、条件、方法、来源和下载入口。只有摘要或外部来源时，不伪造交互图谱。
-
-谱学章节预留可直接接入后端的图谱容器。后端优先返回标准化横纵坐标、单位、峰位置与强度、测量条件、仪器、方法、来源和原始文件地址；前端据此绘制支持缩放、悬停读数和峰标注的交互谱图。后端只提供 PNG、SVG 或 PDF 时可以直接展示静态图，但不能提供完整交互。原始 JCAMP-DX、mzML、mzXML 等文件由后端保留下载，页面使用规范化数据进行绘制。
-
-安全属性包括 GHS 分类、危险说明、防范说明和物理安全数据。来源冲突时并列展示，不强行合并。
-
-每条实验记录直接关联来源。来源部分汇总数据库、文献、贡献记录、DOI、永久链接、年份、获取时间和审核状态。
-
-## 9. Phase 1.0 前端呈现
-
-第一版前端实现：
-
-- 四个核心页面及其响应式布局；
-- 中英双语界面；
-- 名称、别名、CAS、分子式、SMILES、InChI、InChIKey 的演示识别与查询；
-- 结构绘制入口和精确结构检索流程；
-- ID 文件读取、去重和批量匹配预览；
-- 浏览器本地搜索历史；
-- 首页数据总览占位状态、本周前沿和快捷浏览；
-- 扁平筛选结果页；
-- 二维键线式结构展示；
-- 推荐实验值与全部实验记录内联展开；
-- 谱学、安全和数据库级来源展示；
-- 平台、团队、使用、贡献和联系方式页面结构。
-
-当前数据为演示数据，不代表数据库真实规模、完整性或推荐结论。
-
-## 10. 后端支持需求
-
-### 10.1 搜索服务
-
-- 输入类型自动识别；
-- 名称、别名、CAS、分子式、SMILES、InChI、InChIKey 查询；
-- 规范化和精确匹配；
-- 命中原因；
-- 相关度排序；
-- 结果计数和筛选聚合；
-- 唯一精确标识符解析；
-- 无结果建议和拼写纠错。
-
-### 10.2 分子与结构服务
-
-- 稳定的 MolScience ID；
-- 规范结构、组分、盐型和立体化学；
-- 2D SVG 键线式结构；
-- MOL/SDF 下载；
-- 名称、别名和标识符映射；
-- 最近更新时间和版本。
-
-### 10.3 性质与来源服务
-
-- 性质定义和单位标准；
-- 推荐实验值；
-- 推荐理由或评分解释；
-- 全量独立实验记录；
-- 温度、压力、相态、溶剂、方法和不确定度；
-- 数据库、文献 DOI、数据集与贡献者来源；
-- 审核状态和更新时间；
-- 来源冲突与重复记录处理。
-
-### 10.4 谱学与安全服务
-
-- 谱学元数据和原始文件；
-- 结构化峰表；
-- 图谱坐标数据；
-- 测量条件和仪器信息；
-- GHS 分类、危险说明、防范说明及适用地区；
-- 每项安全数据的直接来源。
-
-### 10.5 平台统计与内容服务
-
-- 分子、实验记录、谱学记录和来源总数；
-- 统计口径与最近更新时间；
-- 本周前沿专题内容；
-- 专题与分子、性质、来源的关联。
-
-## 11. 后续路线
-
-### Phase 1.5
-
-- 完整高级检索：字段组合、数值范围、单位换算、数据可用性；
-- 批量 ID 结果、错误报告和导出；
-- 可保存与分享的查询；
-- 数据下载与引用导出；
-- 文献 DOI 和属性级来源；
-- 数据纠错与贡献表单；
-- 更完整的中英文本地化。
-
-### Phase 2.0
-
-- 子结构搜索；
-- 分子相似性搜索；
-- 超结构和 SMARTS 查询；
-- 交互谱图、峰标注和谱图对比；
-- 多分子性质对比；
-- 用户工作区、收藏和检索历史同步；
-- API 文档与开发者访问。
-
-### Phase 3.0
-
-- 机器学习性质预测；
-- 明确区分实验值、计算值和预测值；
-- 模型版本、训练数据范围、不确定度和适用域；
-- 热力学计算模块；
-- 自然语言检索；
-- AI 问答；
-- AI 回答必须引用 MolScience 内部记录和原始来源；
-- AI 工具调用、计算过程和引用链可检查；
-- 不允许 AI 生成值覆盖或冒充实验推荐值。
-
-## 12. 本地预览
-
-```powershell
-cd "E:\Mol Science\molsciencex.github.io"
-npm install
-npm run dev
-```
-
-默认预览地址：
-
-```text
-http://127.0.0.1:5173/
-```
-
-生产构建检查：
-
-```powershell
-npm run build
-```
+# Design System Inspired by Supabase
+
+## 1. Visual Theme & Atmosphere
+
+Supabase's website is a dark-mode-native developer platform that channels the aesthetic of a premium code editor — deep black backgrounds (`#0f0f0f`, `#171717`) with emerald green accents (`#3ecf8e`, `#00c573`) that reference the brand's open-source, PostgreSQL-green identity. The design system feels like it was born in a terminal window and evolved into a sophisticated marketing surface without losing its developer soul.
+
+The typography is built on "Circular" — a geometric sans-serif with rounded terminals that softens the technical edge. At 72px with a 1.00 line-height, the hero text is compressed to its absolute minimum vertical space, creating dense, impactful statements that waste nothing. The monospace companion (Source Code Pro) appears sparingly for uppercase technical labels with 1.2px letter-spacing, creating the "developer console" markers that connect the marketing site to the product experience.
+
+What makes Supabase distinctive is its sophisticated HSL-based color token system. Rather than flat hex values, Supabase uses HSL with alpha channels for nearly every color (`--colors-crimson4`, `--colors-purple5`, `--colors-slateA12`), enabling a nuanced layering system where colors interact through transparency. This creates depth through translucency — borders at `rgba(46, 46, 46)`, surfaces at `rgba(41, 41, 41, 0.84)`, and accents at partial opacity all blend with the dark background to create a rich, dimensional palette from minimal color ingredients.
+
+The green accent (`#3ecf8e`) appears selectively — in the Supabase logo, in link colors (`#00c573`), and in border highlights (`rgba(62, 207, 142, 0.3)`) — always as a signal of "this is Supabase" rather than as a decorative element. Pill-shaped buttons (9999px radius) for primary CTAs contrast with standard 6px radius for secondary elements, creating a clear visual hierarchy of importance.
+
+**Key Characteristics:**
+- Dark-mode-native: near-black backgrounds (`#0f0f0f`, `#171717`) — never pure black
+- Emerald green brand accent (`#3ecf8e`, `#00c573`) used sparingly as identity marker
+- Circular font — geometric sans-serif with rounded terminals
+- Source Code Pro for uppercase technical labels (1.2px letter-spacing)
+- HSL-based color token system with alpha channels for translucent layering
+- Pill buttons (9999px) for primary CTAs, 6px radius for secondary
+- Neutral gray scale from `#171717` through `#898989` to `#fafafa`
+- Border system using dark grays (`#2e2e2e`, `#363636`, `#393939`)
+- Minimal shadows — depth through border contrast and transparency
+- Radix color primitives (crimson, purple, violet, indigo, yellow, tomato, orange, slate)
+
+## 2. Color Palette & Roles
+
+### Brand
+- **Supabase Green** (`#3ecf8e`): Primary brand color, logo, accent borders
+- **Green Link** (`#00c573`): Interactive green for links and actions
+- **Green Border** (`rgba(62, 207, 142, 0.3)`): Subtle green border accent
+
+### Neutral Scale (Dark Mode)
+- **Near Black** (`#0f0f0f`): Primary button background, deepest surface
+- **Dark** (`#171717`): Page background, primary canvas
+- **Dark Border** (`#242424`): Horizontal rule, section dividers
+- **Border Dark** (`#2e2e2e`): Card borders, tab borders
+- **Mid Border** (`#363636`): Button borders, dividers
+- **Border Light** (`#393939`): Secondary borders
+- **Charcoal** (`#434343`): Tertiary borders, dark accents
+- **Dark Gray** (`#4d4d4d`): Heavy secondary text
+- **Mid Gray** (`#898989`): Muted text, link color
+- **Light Gray** (`#b4b4b4`): Secondary link text
+- **Near White** (`#efefef`): Light border, subtle surface
+- **Off White** (`#fafafa`): Primary text, button text
+
+### Radix Color Tokens (HSL-based)
+- **Slate Scale**: `--colors-slate5` through `--colors-slateA12` — neutral progression
+- **Purple**: `--colors-purple4`, `--colors-purple5`, `--colors-purpleA7` — accent spectrum
+- **Violet**: `--colors-violet10` (`hsl(251, 63.2%, 63.2%)`) — vibrant accent
+- **Crimson**: `--colors-crimson4`, `--colors-crimsonA9` — warm accent / alert
+- **Indigo**: `--colors-indigoA2` — subtle blue wash
+- **Yellow**: `--colors-yellowA7` — attention/warning
+- **Tomato**: `--colors-tomatoA4` — error accent
+- **Orange**: `--colors-orange6` — warm accent
+
+### Surface & Overlay
+- **Glass Dark** (`rgba(41, 41, 41, 0.84)`): Translucent dark overlay
+- **Slate Alpha** (`hsla(210, 87.8%, 16.1%, 0.031)`): Ultra-subtle blue wash
+- **Fixed Scale Alpha** (`hsla(200, 90.3%, 93.4%, 0.109)`): Light frost overlay
+
+### Shadows
+- Supabase uses **almost no shadows** in its dark theme. Depth is created through border contrast and surface color differences rather than box-shadows. Focus states use `rgba(0, 0, 0, 0.1) 0px 4px 12px` — minimal, functional.
+
+## 3. Typography Rules
+
+### Font Families
+- **Primary**: `Circular`, with fallbacks: `custom-font, Helvetica Neue, Helvetica, Arial`
+- **Monospace**: `Source Code Pro`, with fallbacks: `Office Code Pro, Menlo`
+
+### Hierarchy
+
+| Role | Font | Size | Weight | Line Height | Letter Spacing | Notes |
+|------|------|------|--------|-------------|----------------|-------|
+| Display Hero | Circular | 72px (4.50rem) | 400 | 1.00 (tight) | normal | Maximum density, zero waste |
+| Section Heading | Circular | 36px (2.25rem) | 400 | 1.25 (tight) | normal | Feature section titles |
+| Card Title | Circular | 24px (1.50rem) | 400 | 1.33 | -0.16px | Slight negative tracking |
+| Sub-heading | Circular | 18px (1.13rem) | 400 | 1.56 | normal | Secondary headings |
+| Body | Circular | 16px (1.00rem) | 400 | 1.50 | normal | Standard body text |
+| Nav Link | Circular | 14px (0.88rem) | 500 | 1.00–1.43 | normal | Navigation items |
+| Button | Circular | 14px (0.88rem) | 500 | 1.14 (tight) | normal | Button labels |
+| Caption | Circular | 14px (0.88rem) | 400–500 | 1.43 | normal | Metadata, tags |
+| Small | Circular | 12px (0.75rem) | 400 | 1.33 | normal | Fine print, footer links |
+| Code Label | Source Code Pro | 12px (0.75rem) | 400 | 1.33 | 1.2px | `text-transform: uppercase` |
+
+### Principles
+- **Weight restraint**: Nearly all text uses weight 400 (regular/book). Weight 500 appears only for navigation links and button labels. There is no bold (700) in the detected system — hierarchy is created through size, not weight.
+- **1.00 hero line-height**: The hero text is compressed to absolute zero leading. This is the defining typographic gesture — text that feels like a terminal command: dense, efficient, no wasted vertical space.
+- **Negative tracking on cards**: Card titles use -0.16px letter-spacing, a subtle tightening that differentiates them from body text without being obvious.
+- **Monospace as ritual**: Source Code Pro in uppercase with 1.2px letter-spacing is the "developer console" voice — used sparingly for technical labels that connect to the product experience.
+- **Geometric personality**: Circular's rounded terminals create warmth in what could otherwise be a cold, technical interface. The font is the humanizing element.
+
+## 4. Component Stylings
+
+### Buttons
+
+**Primary Pill (Dark)**
+- Background: `#0f0f0f`
+- Text: `#fafafa`
+- Padding: 8px 32px
+- Radius: 9999px (full pill)
+- Border: `1px solid #fafafa` (white border on dark)
+- Focus shadow: `rgba(0, 0, 0, 0.1) 0px 4px 12px`
+- Use: Primary CTA ("Start your project")
+
+**Secondary Pill (Dark, Muted)**
+- Background: `#0f0f0f`
+- Text: `#fafafa`
+- Padding: 8px 32px
+- Radius: 9999px
+- Border: `1px solid #2e2e2e` (dark border)
+- Opacity: 0.8
+- Use: Secondary CTA alongside primary
+
+**Ghost Button**
+- Background: transparent
+- Text: `#fafafa`
+- Padding: 8px
+- Radius: 6px
+- Border: `1px solid transparent`
+- Use: Tertiary actions, icon buttons
+
+### Cards & Containers
+- Background: dark surfaces (`#171717` or slightly lighter)
+- Border: `1px solid #2e2e2e` or `#363636`
+- Radius: 8px–16px
+- No visible shadows — borders define edges
+- Internal padding: 16px–24px
+
+### Tabs
+- Border: `1px solid #2e2e2e`
+- Radius: 9999px (pill tabs)
+- Active: green accent or lighter surface
+- Inactive: dark, muted
+
+### Links
+- **Green**: `#00c573` — Supabase-branded links
+- **Primary Light**: `#fafafa` — standard links on dark
+- **Secondary**: `#b4b4b4` — muted links
+- **Muted**: `#898989` — tertiary links, footer
+
+### Navigation
+- Dark background matching page (`#171717`)
+- Supabase logo with green icon
+- Circular 14px weight 500 for nav links
+- Clean horizontal layout with product dropdown
+- Green "Start your project" CTA pill button
+- Sticky header behavior
+
+## 5. Layout Principles
+
+### Spacing System
+- Base unit: 8px
+- Scale: 1px, 4px, 6px, 8px, 12px, 16px, 20px, 24px, 32px, 40px, 48px, 90px, 96px, 128px
+- Notable large jumps: 48px → 90px → 96px → 128px for major section spacing
+
+### Grid & Container
+- Centered content with generous max-width
+- Full-width dark sections with constrained inner content
+- Feature grids: icon-based grids with consistent card sizes
+- Logo grids for "Trusted by" sections
+- Footer: multi-column on dark background
+
+### Breakpoints
+| Name | Width | Key Changes |
+|------|-------|-------------|
+| Mobile | <600px | Single column, stacked layout |
+| Desktop | >600px | Multi-column grids, expanded layout |
+
+*Note: Supabase uses a notably minimal breakpoint system — primarily a single 600px breakpoint, suggesting a mobile-first approach with progressive enhancement.*
+
+### Whitespace Philosophy
+- **Dramatic section spacing**: 90px–128px between major sections creates a cinematic pacing — each section is its own scene in the dark void.
+- **Dense content blocks**: Within sections, spacing is tight (16px–24px), creating concentrated information clusters.
+- **Border-defined space**: Instead of whitespace + shadows for separation, Supabase uses thin borders on dark backgrounds — separation through line, not gap.
+
+### Border Radius Scale
+- Standard (6px): Ghost buttons, small elements
+- Comfortable (8px): Cards, containers
+- Medium (11px–12px): Mid-size panels
+- Large (16px): Feature cards, major containers
+- Pill (9999px): Primary buttons, tab indicators
+
+## 6. Depth & Elevation
+
+| Level | Treatment | Use |
+|-------|-----------|-----|
+| Flat (Level 0) | No shadow, border `#2e2e2e` | Default state, most surfaces |
+| Subtle Border (Level 1) | Border `#363636` or `#393939` | Interactive elements, hover |
+| Focus (Level 2) | `rgba(0, 0, 0, 0.1) 0px 4px 12px` | Focus states only |
+| Green Accent (Level 3) | Border `rgba(62, 207, 142, 0.3)` | Brand-highlighted elements |
+
+**Shadow Philosophy**: Supabase deliberately avoids shadows. In a dark-mode-native design, shadows are nearly invisible and serve no purpose. Instead, depth is communicated through a sophisticated border hierarchy — from `#242424` (barely visible) through `#2e2e2e` (standard) to `#393939` (prominent). The green accent border (`rgba(62, 207, 142, 0.3)`) at 30% opacity is the "elevated" state — the brand color itself becomes the depth signal.
+
+## 7. Do's and Don'ts
+
+### Do
+- Use near-black backgrounds (`#0f0f0f`, `#171717`) — depth comes from the gray border hierarchy
+- Apply Supabase green (`#3ecf8e`, `#00c573`) sparingly — it's an identity marker, not a decoration
+- Use Circular at weight 400 for nearly everything — 500 only for buttons and nav
+- Set hero text to 1.00 line-height — the zero-leading is the typographic signature
+- Create depth through border color differences (`#242424` → `#2e2e2e` → `#363636`)
+- Use pill shape (9999px) exclusively for primary CTAs and tabs
+- Employ HSL-based colors with alpha for translucent layering effects
+- Use Source Code Pro uppercase labels for developer-context markers
+
+### Don't
+- Don't add box-shadows — they're invisible on dark backgrounds and break the border-defined depth system
+- Don't use bold (700) text weight — the system uses 400 and 500 only
+- Don't apply green to backgrounds or large surfaces — it's for borders, links, and small accents
+- Don't use warm colors (crimson, orange) as primary design elements — they exist as semantic tokens for states
+- Don't increase hero line-height above 1.00 — the density is intentional
+- Don't use large border radius (16px+) on buttons — pills (9999px) or standard (6px), nothing in between
+- Don't lighten the background above `#171717` for primary surfaces — the darkness is structural
+- Don't forget the translucent borders — `rgba` border colors are the layering mechanism
+
+## 8. Responsive Behavior
+
+### Breakpoints
+| Name | Width | Key Changes |
+|------|-------|-------------|
+| Mobile | <600px | Single column, stacked features, condensed nav |
+| Desktop | >600px | Multi-column grids, full nav, expanded sections |
+
+### Collapsing Strategy
+- Hero: 72px → scales down proportionally
+- Feature grids: multi-column → single column stacked
+- Logo row: horizontal → wrapped grid
+- Navigation: full → hamburger
+- Section spacing: 90–128px → 48–64px
+- Buttons: inline → full-width stacked
+
+## 9. Agent Prompt Guide
+
+### Quick Color Reference
+- Background: `#0f0f0f` (button), `#171717` (page)
+- Text: `#fafafa` (primary), `#b4b4b4` (secondary), `#898989` (muted)
+- Brand green: `#3ecf8e` (brand), `#00c573` (links)
+- Borders: `#242424` (subtle), `#2e2e2e` (standard), `#363636` (prominent)
+- Green border: `rgba(62, 207, 142, 0.3)` (accent)
+
+### Example Component Prompts
+- "Create a hero section on #171717 background. Headline at 72px Circular weight 400, line-height 1.00, #fafafa text. Sub-text at 16px Circular weight 400, line-height 1.50, #b4b4b4. Pill CTA button (#0f0f0f bg, #fafafa text, 9999px radius, 8px 32px padding, 1px solid #fafafa border)."
+- "Design a feature card: #171717 background, 1px solid #2e2e2e border, 16px radius. Title at 24px Circular weight 400, letter-spacing -0.16px. Body at 14px weight 400, #898989 text."
+- "Build navigation bar: #171717 background. Circular 14px weight 500 for links, #fafafa text. Supabase logo with green icon left-aligned. Green pill CTA 'Start your project' right-aligned."
+- "Create a technical label: Source Code Pro 12px, uppercase, letter-spacing 1.2px, #898989 text."
+- "Design a framework logo grid: 6-column layout on dark, grayscale logos at 60% opacity, 1px solid #2e2e2e border between sections."
+
+### Iteration Guide
+1. Start with #171717 background — everything is dark-mode-native
+2. Green is the brand identity marker — use it for links, logo, and accent borders only
+3. Depth comes from borders (#242424 → #2e2e2e → #363636), not shadows
+4. Weight 400 is the default for everything — 500 only for interactive elements
+5. Hero line-height of 1.00 is the signature typographic move
+6. Pill (9999px) for primary actions, 6px for secondary, 8-16px for cards
+7. HSL with alpha channels creates the sophisticated translucent layering
