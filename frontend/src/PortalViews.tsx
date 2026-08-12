@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, MouseEvent as ReactMouseEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Lang, detectType, findMolecules, molecules } from "./data";
 import { getAboutContent } from "./aboutContent";
@@ -83,16 +83,58 @@ function HistoryDialog({open,close,lang}:{open:boolean;close:()=>void;lang:Lang}
 
 export function AboutHub({lang}:{lang:Lang}){
  const t=getAboutContent(lang);
+ const portalItems=[["01",t.nav[0],"platform"],["02",t.nav[1],"architecture"],["03",t.nav[2],"pipeline"],["04",t.nav[3],"team"],["05",t.nav[4],"guide"],["06",t.nav[5],"contribute"]];
+ const [activePortalId,setActivePortalId]=useState("platform");
+ const portalScrollTimer=useRef<number|null>(null);
+ const portalScrollInProgress=useRef(false);
+ useEffect(()=>{
+  const updateActiveSection=()=>{
+   if(portalScrollInProgress.current)return;
+   const readingLine=Math.min(window.innerHeight*.3,260);
+   let nextId=portalItems[0][2];
+   for(const [, ,id] of portalItems){
+    const section=document.getElementById(id);
+    if(section&&section.getBoundingClientRect().top<=readingLine)nextId=id;
+    else break;
+   }
+   setActivePortalId(nextId);
+  };
+  updateActiveSection();
+  window.addEventListener("scroll",updateActiveSection,{passive:true});
+  window.addEventListener("resize",updateActiveSection);
+  return()=>{window.removeEventListener("scroll",updateActiveSection);window.removeEventListener("resize",updateActiveSection);if(portalScrollTimer.current!==null)window.clearTimeout(portalScrollTimer.current)};
+ },[]);
+ const navigateToPortal=(event:ReactMouseEvent<HTMLAnchorElement>,id:string)=>{
+  event.preventDefault();
+  const section=document.getElementById(id);
+  if(!section)return;
+  if(portalScrollTimer.current!==null)window.clearTimeout(portalScrollTimer.current);
+  setActivePortalId(id);
+  window.history.pushState(null,"",`#${id}`);
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){section.scrollIntoView();return}
+  const targetY=section.getBoundingClientRect().top+window.scrollY-88;
+  const distance=Math.abs(targetY-window.scrollY);
+  const duration=Math.min(760,Math.max(480,distance*.32));
+  portalScrollInProgress.current=true;
+  window.setTimeout(()=>window.scrollTo({top:targetY,behavior:"smooth"}),0);
+  portalScrollTimer.current=window.setTimeout(()=>{
+   portalScrollTimer.current=null;
+   portalScrollInProgress.current=false;
+   setActivePortalId(id);
+  },duration+120);
+ };
+ const activePortalIndex=Math.max(0,portalItems.findIndex(([, ,id])=>id===activePortalId));
  const roles=lang==="zh"?[["项目方向","平台规划与科研协作"],["数据方向","标准、审核与来源体系"],["工程方向","检索、服务与平台体验"],["开放协作","社区贡献与文档维护"]]:[["Project direction","Planning and research collaboration"],["Data direction","Standards, review and provenance"],["Engineering","Search, services and product experience"],["Open collaboration","Community and documentation"]];
- return <main><section className="aboutHeroEditorial"><div className="container"><p className="portalKicker">ABOUT MOLSCIENCE</p><h1><span>MolScience</span>{t.title}</h1><p>{t.lead}</p><div className="aboutHeroActions"><a href="#platform" className="primaryAction">{lang==="zh"?"了解平台":"Explore the platform"}</a><Link to="/">{lang==="zh"?"开始检索":"Start searching"} →</Link></div></div></section>
- <nav className="aboutPortalNav container">{[["01",t.nav[0],"platform"],["02",t.nav[1],"architecture"],["03",t.nav[2],"pipeline"],["04",t.nav[3],"team"],["05",t.nav[4],"guide"],["06",t.nav[5],"contribute"]].map(([n,label,id])=><a href={`#${id}`} key={id}><span>{n}</span><b>{label}</b><i>→</i></a>)}</nav>
+ return <main className="aboutPage"><div className="aboutReadingLayout container">
+ <aside className="aboutSidebar"><div className="aboutSidebarInner"><p className="portalKicker">ABOUT MOLSCIENCE</p><nav className="aboutPortalNav" aria-label={lang==="zh"?"平台介绍章节":"About sections"}><i className="aboutPortalIndicator" aria-hidden="true" style={{transform:`translateY(${activePortalIndex*54}px)`}}/>{portalItems.map(([n,label,id])=><a href={`#${id}`} key={id} className={activePortalId===id?"isActive":undefined} aria-current={activePortalId===id?"location":undefined} onClick={event=>navigateToPortal(event,id)}><span>{n}</span><b>{label}</b></a>)}</nav></div></aside>
+ <div className="aboutReadingMain"><section className="aboutHeroEditorial"><div><h1><span>MolScience</span>{t.title}</h1><p>{t.lead}</p><div className="aboutHeroActions"><Link to="/" className="primaryAction">{lang==="zh"?"开始检索":"Start searching"}</Link></div></div></section>
  <div className="aboutEditorial">
-  <section id="platform" className="aboutSection container"><div className="aboutSectionTitle"><small>01 / WHY</small><h2>{lang==="zh"?"为什么建设 MolScience":"Why MolScience"}</h2></div><div><p className="aboutLargeCopy">{t.platform}</p><div className="challengeGrid">{t.challenges.map((item,i)=><article key={item.title}><span>0{i+1}</span><h3>{item.title}</h3><p>{item.text}</p></article>)}</div></div></section>
-  <section id="architecture" className="aboutSection container"><div className="aboutSectionTitle"><small>02 / ARCHITECTURE</small><h2>{lang==="zh"?"多数据库协同架构":"A collaborative data architecture"}</h2></div><div><p className="aboutLargeCopy">{t.architectureIntro}</p><div className="architectureGrid">{t.architecture.map((item,i)=><article key={item.code}><div><span>0{i+1}</span><code>{item.code}</code></div><h3>{item.title}</h3><p>{item.text}</p><small>{item.output}</small></article>)}</div><div className="architectureOutcome"><b>{lang==="zh"?"统一数据层":"UNIFIED DATA LAYER"}</b><span>{lang==="zh"?"精确检索 · 关系分析 · 相似性搜索 · 性质预测 · 分子设计":"Exact search · Relationship analysis · Similarity · Prediction · Molecular design"}</span></div></div></section>
-  <section id="pipeline" className="aboutSection container"><div className="aboutSectionTitle"><small>03 / DATA TO INTELLIGENCE</small><h2>{lang==="zh"?"从数据治理到模型应用":"From governance to model applications"}</h2></div><div><p className="aboutLargeCopy">{t.pipelineIntro}</p><ol className="pipelineGrid">{t.pipeline.map((item,i)=><li key={item.title}><span>{String(i+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.text}</p></div></li>)}</ol><div className="dataPrinciples">{t.principles.map((item,i)=><article key={item.title}><span>0{i+1}</span><h3>{item.title}</h3><p>{item.text}</p></article>)}</div><div className="phaseRibbon"><b>Phase 1.0</b><span>{lang==="zh"?"检索":"Search"}</span><i>→</i><span>{lang==="zh"?"结果":"Results"}</span><i>→</i><span>{lang==="zh"?"详情":"Details"}</span><i>→</i><span>{lang==="zh"?"实验数据":"Experiments"}</span><i>→</i><span>{lang==="zh"?"来源":"Sources"}</span></div></div></section>
-  <section id="team" className="aboutSection container"><div className="aboutSectionTitle"><small>04 / TEAM</small><h2>{t.nav[3]}</h2></div><div><p className="aboutLargeCopy">{t.team}</p><div className="teamRoles">{roles.map(([a,b])=><article key={a}><small>{a}</small><h3>{b}</h3><p>{lang==="zh"?"核心成员信息将在正式发布前更新。":"Core member information will be added before release."}</p></article>)}</div></div></section>
-  <section id="guide" className="aboutSection container"><div className="aboutSectionTitle"><small>05 / USER GUIDE</small><h2>{t.nav[4]}</h2></div><div><p className="aboutLargeCopy">{t.guide}</p><ol className="guideRows">{(lang==="zh"?["输入名称或结构标识符","查看匹配结果与命中原因","进入分子详情","比较推荐值与全部实验记录","核查实验条件和来源"]:["Enter a name or structure identifier","Review matches and reasons","Open the molecule detail","Compare recommendations and all experiments","Verify conditions and sources"]).map((x,i)=><li key={x}><span>0{i+1}</span>{x}</li>)}</ol><a className="aboutDocsLink" href="https://docs.molscience.org" target="_blank" rel="noreferrer">{lang==="zh"?"阅读完整使用文档":"Read the complete documentation"} ↗</a></div></section>
-  <section id="contribute" className="aboutSection container"><div className="aboutSectionTitle"><small>06 / CONTRIBUTE</small><h2>{t.nav[5]}</h2></div><div><p className="aboutLargeCopy">{t.contribute}</p><div className="contributeEditorial"><div><h3>{lang==="zh"?"可以贡献":"What to contribute"}</h3><p>{lang==="zh"?"分子记录 · 实验物性 · 谱学数据 · 来源 · 错误修正 · 文档与代码":"Molecules · Experiments · Spectra · Sources · Corrections · Docs and code"}</p></div><div><h3>{lang==="zh"?"审核流程":"Review flow"}</h3><p>{lang==="zh"?"提交 → 格式检查 → 来源核验 → 科研审核 → 发布":"Submit → Format check → Source verification → Scientific review → Publish"}</p></div></div></div></section>
- </div>
+  <section id="platform" className="aboutSection"><div className="aboutSectionTitle"><small>01 / WHY</small><h2>{lang==="zh"?"为什么建设 MolScience":"Why MolScience"}</h2></div><div><p className="aboutLargeCopy">{t.platform}</p><div className="challengeGrid">{t.challenges.map((item,i)=><article key={item.title}><span>0{i+1}</span><h3>{item.title}</h3><p>{item.text}</p></article>)}</div></div></section>
+  <section id="architecture" className="aboutSection"><div className="aboutSectionTitle"><small>02 / ARCHITECTURE</small><h2>{lang==="zh"?"多数据库协同架构":"A collaborative data architecture"}</h2></div><div><p className="aboutLargeCopy">{t.architectureIntro}</p><div className="architectureGrid">{t.architecture.map((item,i)=><article key={item.code}><div><span>0{i+1}</span><code>{item.code}</code></div><h3>{item.title}</h3><p>{item.text}</p><small>{item.output}</small></article>)}</div><div className="architectureOutcome"><b>{lang==="zh"?"统一数据层":"UNIFIED DATA LAYER"}</b><span>{lang==="zh"?"精确检索 · 关系分析 · 相似性搜索 · 性质预测 · 分子设计":"Exact search · Relationship analysis · Similarity · Prediction · Molecular design"}</span></div></div></section>
+  <section id="pipeline" className="aboutSection"><div className="aboutSectionTitle"><small>03 / DATA TO INTELLIGENCE</small><h2>{lang==="zh"?"从数据治理到模型应用":"From governance to model applications"}</h2></div><div><p className="aboutLargeCopy">{t.pipelineIntro}</p><ol className="pipelineGrid">{t.pipeline.map((item,i)=><li key={item.title}><span>{String(i+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.text}</p></div></li>)}</ol><div className="dataPrinciples">{t.principles.map((item,i)=><article key={item.title}><span>0{i+1}</span><h3>{item.title}</h3><p>{item.text}</p></article>)}</div><div className="phaseRibbon"><b>Phase 1.0</b><span>{lang==="zh"?"检索":"Search"}</span><i>→</i><span>{lang==="zh"?"结果":"Results"}</span><i>→</i><span>{lang==="zh"?"详情":"Details"}</span><i>→</i><span>{lang==="zh"?"实验数据":"Experiments"}</span><i>→</i><span>{lang==="zh"?"来源":"Sources"}</span></div></div></section>
+  <section id="team" className="aboutSection"><div className="aboutSectionTitle"><small>04 / TEAM</small><h2>{t.nav[3]}</h2></div><div><p className="aboutLargeCopy">{t.team}</p><div className="teamRoles">{roles.map(([a,b])=><article key={a}><small>{a}</small><h3>{b}</h3><p>{lang==="zh"?"核心成员信息将在正式发布前更新。":"Core member information will be added before release."}</p></article>)}</div></div></section>
+  <section id="guide" className="aboutSection"><div className="aboutSectionTitle"><small>05 / USER GUIDE</small><h2>{t.nav[4]}</h2></div><div><p className="aboutLargeCopy">{t.guide}</p><ol className="guideRows">{(lang==="zh"?["输入名称或结构标识符","查看匹配结果与命中原因","进入分子详情","比较推荐值与全部实验记录","核查实验条件和来源"]:["Enter a name or structure identifier","Review matches and reasons","Open the molecule detail","Compare recommendations and all experiments","Verify conditions and sources"]).map((x,i)=><li key={x}><span>0{i+1}</span>{x}</li>)}</ol><a className="aboutDocsLink" href="https://docs.molscience.org" target="_blank" rel="noreferrer">{lang==="zh"?"阅读完整使用文档":"Read the complete documentation"} ↗</a></div></section>
+  <section id="contribute" className="aboutSection"><div className="aboutSectionTitle"><small>06 / CONTRIBUTE</small><h2>{t.nav[5]}</h2></div><div><p className="aboutLargeCopy">{t.contribute}</p><div className="contributeEditorial"><div><h3>{lang==="zh"?"可以贡献":"What to contribute"}</h3><p>{lang==="zh"?"分子记录 · 实验物性 · 谱学数据 · 来源 · 错误修正 · 文档与代码":"Molecules · Experiments · Spectra · Sources · Corrections · Docs and code"}</p></div><div><h3>{lang==="zh"?"审核流程":"Review flow"}</h3><p>{lang==="zh"?"提交 → 格式检查 → 来源核验 → 科研审核 → 发布":"Submit → Format check → Source verification → Scientific review → Publish"}</p></div></div></div></section>
+ </div></div></div>
  <section id="contact" className="aboutContact"><div className="container"><div><small>CONTACT MOLSCIENCE</small><h2>{lang==="zh"?"合作与联系":"Work with us"}</h2><p>{t.contact}</p></div><div className="contactInline"><span><small>{t.mail}</small><b>{lang==="zh"?"待公布":"To be announced"}</b></span><span><small>{t.docs}</small><b>MolScienceX</b></span><span><small>{lang==="zh"?"所属机构":"Institution"}</small><b>{lang==="zh"?"待公布":"To be announced"}</b></span></div></div></section></main>
 }
