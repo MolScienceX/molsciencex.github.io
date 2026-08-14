@@ -4,6 +4,7 @@
 !.dev.vars.example
 .env*
 !.env.example
+!frontend/.env.production
 node_modules/
 dist/
 *.tsbuildinfo

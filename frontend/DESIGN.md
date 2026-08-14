@@ -543,20 +543,25 @@ MolScience
 
 ## 12. 本地预览
 
-```powershell
-cd "E:\Mol Science\molsciencex.github.io"
-npm install
+```bash
+cd frontend
+npm ci
+cp .env.example .env.local
 npm run dev
 ```
 
 默认预览地址：
 
 ```text
-http://127.0.0.1:5173/
+http://localhost:5173/
 ```
+
+`.env.local` 中的 `VITE_API_BASE_URL` 指向当前开发后端，默认使用
+`http://127.0.0.1:8000`。该文件不提交到 Git；生产构建自动读取已提交的
+`.env.production`，连接 `https://api.molscience.org`。
 
 生产构建检查：
 
-```powershell
+```bash
 npm run build
 ```
