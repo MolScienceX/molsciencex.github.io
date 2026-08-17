@@ -102,6 +102,12 @@ html{scroll-padding-top:112px}body{font-size:16px;line-height:1.65}.portalHero{p
  }
 }
 
+.apiState{min-height:520px;padding:70px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.apiState h1{margin:24px 0 6px;font-size:28px}
+.apiState p,.inlineApiState{color:var(--muted)}
+.inlineApiState{padding:28px 0;border-bottom:1px solid var(--line)}
+.resultStructure .atom,.structure .atom{transform:scale(.82)}
+
 /* Detail typography and backend-ready spectrum area */
 .detailBody{font-size:17px}
 main:has(> .molHero) .molHero .muted{color:#69707d;font-size:17px}

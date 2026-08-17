@@ -1,11 +1,15 @@
 export type Lang = "zh" | "en";
+export type StandardizationStatus = "PENDING" | "STANDARDIZED" | "FAILED";
+export type RecordStatus = "ACTIVE" | "DEPRECATED" | "DELETED";
 export type RecordValue = { value: string; condition: string; source: string; quality: "recommended" | "high" | "standard"; method?: string };
 export type Property = { key: string; label: { zh: string; en: string }; value: string; condition: string; records: RecordValue[] };
 export type Molecule = {
-  id: string; cid: number; inchikey: string; name: { zh: string; en: string }; iupac: string; aliases: string[];
+  uuid?: string; id: string; cid: number; inchikey: string; name: { zh: string; en: string }; iupac: string; aliases: string[];
   formula: string; mass: string; cas: string; smiles: string; inchi: string; description: { zh: string; en: string };
   categories: ("numeric" | "spectra" | "safety")[]; sources: string[]; properties: Property[]; spectra: string[];
   safety: { level: "danger" | "warning" | "info"; label: { zh: string; en: string }; zh: string[]; en: string[] };
+  standardizationStatus?: StandardizationStatus; standardizationVersion?: string;
+  recordStatus?: RecordStatus; createdAt?: string; updatedAt?: string;
 };
 
 export const molecules: Molecule[] = [
@@ -65,10 +69,10 @@ export const molecules: Molecule[] = [
   }
 ];
 
-export const structureImage = (m: Molecule, size = "small") => `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${m.cid}/PNG?record_type=2d&image_size=${size}`;
+export const structureImage = (m: Molecule, size = "small") => m.cid > 0 ? `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${m.cid}/PNG?record_type=2d&image_size=${size}` : null;
 export const detectType = (q: string, lang: Lang) => {
   const v = q.trim(); const t = lang === "zh" ? ["CAS 号", "InChIKey", "InChI", "分子式", "SMILES", "分子名称或别名"] : ["CAS Registry Number", "InChIKey", "InChI", "molecular formula", "SMILES", "molecule name or alias"];
   if (/^\d{2,7}-\d{2}-\d$/.test(v)) return t[0]; if (/^[A-Z]{14}-[A-Z]{10}-[A-Z]$/.test(v)) return t[1]; if (/^InChI=/i.test(v)) return t[2];
   if (/^(?=.*[A-Z])(?:[A-Z][a-z]?\d*)+$/.test(v)) return t[3]; if (/[=#()[\]@+\\/]/.test(v) || /^(?:C|N|O|S|P|F|Cl|Br|I){1,6}$/.test(v)) return t[4]; return t[5];
 };
-export const findMolecules = (q: string) => { const n = q.trim().toLowerCase().replace(/\s/g, ""); if (!n) return molecules; return molecules.filter(m => [m.name.zh,m.name.en,m.iupac,...m.aliases,m.formula,m.cas,m.smiles,m.inchi,m.inchikey,m.id].some(v => v.toLowerCase().replace(/\s/g, "").includes(n))); };
+export const findMolecules = (q: string, source: Molecule[] = molecules) => { const n = q.trim().toLowerCase().replace(/\s/g, ""); if (!n) return source; return source.filter(m => [m.name.zh,m.name.en,m.iupac,...m.aliases,m.formula,m.cas,m.smiles,m.inchi,m.inchikey,m.id].some(v => v.toLowerCase().replace(/\s/g, "").includes(n))); };
