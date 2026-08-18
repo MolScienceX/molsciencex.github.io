@@ -1,0 +1,79 @@
+/* Authentication */
+.authPage{min-height:calc(100vh - 180px);padding:72px 24px 96px;background:var(--color-canvas)}
+.authPanel{width:min(480px,100%);margin:0 auto;padding:38px 40px;border:1px solid var(--color-border);border-radius:2px;background:var(--color-surface)}
+.authEyebrow{margin:0 0 10px;color:var(--color-accent);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.authPanel h1{margin:0;color:var(--color-text);font-size:34px;line-height:1.18;letter-spacing:-.025em}
+.authDescription{margin:13px 0 0;color:var(--color-text-secondary);font-size:15px;line-height:1.65}
+.authDescription strong{color:var(--color-text);font-weight:600;overflow-wrap:anywhere}
+.changeEmailLink{margin-left:10px;color:var(--color-accent);font-size:13px;font-weight:600;white-space:nowrap}
+.authForm{margin-top:30px;display:grid;gap:18px}
+.authForm label{display:grid;gap:7px}
+.authForm label>span{color:var(--color-text-secondary);font-size:13px;font-weight:600}
+.passwordFieldGroup{display:grid;gap:7px}
+.authForm .passwordLabel{display:flex;align-items:center;justify-content:space-between;gap:16px;color:var(--color-text-secondary);font-size:13px;font-weight:600}
+.forgotPasswordLink{color:var(--color-accent);font-size:13px;font-weight:600;white-space:nowrap}
+.forgotPasswordLink:hover{text-decoration:underline;text-underline-offset:3px}
+.authForm input{width:100%;height:46px;padding:0 13px;border:1px solid var(--color-border);border-radius:2px;background:var(--color-surface);color:var(--color-text);font:16px var(--sans)}
+.authForm input:focus{border-color:var(--color-accent);box-shadow:var(--focus-ring);outline:0}
+.authForm input[aria-invalid="true"]{border-color:var(--color-error)}
+.authForm input[aria-invalid="true"]:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--color-error) 18%,transparent)}
+.authFieldError{margin:0;color:var(--color-error);font-size:12px;line-height:1.45}
+.passwordControl{position:relative}
+.passwordControl input{padding-right:52px}
+.passwordControl button{position:absolute;top:1px;right:1px;width:44px;height:44px;padding:0;display:grid;place-items:center;border:0;border-left:1px solid transparent;border-radius:0 2px 2px 0;background:transparent;color:var(--color-text-muted);cursor:pointer}
+.passwordControl button:hover{background:var(--color-surface-subtle);color:var(--color-accent)}
+.passwordControl button:focus-visible{outline:2px solid var(--color-accent);outline-offset:-3px}
+.passwordControl svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.7}
+.passwordControl .passwordEyeSlash{stroke-width:2}
+.passwordFeedback{min-height:18px;display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap}
+.passwordRequirement,.passwordMatch{margin:0;color:var(--color-text-muted);font-size:12px;line-height:1.45}
+.passwordRequirement--error,.passwordMatch--invalid{color:var(--color-error)}
+.passwordMatch--valid{color:var(--color-success)}
+.passwordMatch--valid:before{content:"✓ ";font-weight:700}
+.passwordStrength{margin-left:auto;display:inline-flex;align-items:center;gap:9px;color:var(--color-text-muted)}
+.passwordStrengthLabel{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-size:12px}
+.passwordStrengthLabel strong{color:currentColor;font-weight:700}
+.passwordStrengthSegments{width:148px;display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.passwordStrengthSegments span{height:4px;border-radius:99px;background:var(--color-border);transition:background-color .2s ease}
+.passwordStrength--0{color:var(--color-error)}
+.passwordStrength--1{color:#d87322}
+.passwordStrength--2{color:var(--color-accent)}
+.passwordStrength--3{color:var(--color-success)}
+.passwordStrength--0 .passwordStrengthSegments span:nth-child(1),
+.passwordStrength--1 .passwordStrengthSegments span:nth-child(-n+2),
+.passwordStrength--2 .passwordStrengthSegments span:nth-child(-n+3),
+.passwordStrength--3 .passwordStrengthSegments span{background:currentColor}
+.authForm .verificationCode{font:600 24px var(--mono);letter-spacing:.32em;text-align:center}
+.verificationHelp{margin-top:-9px;display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;color:var(--color-text-muted);font-size:13px}
+.verificationHelp button{margin-left:auto;padding:3px 0;border:0;background:transparent;color:var(--color-accent);font:600 13px var(--sans);cursor:pointer}
+.verificationHelp button:hover:not(:disabled){color:var(--color-accent-hover);text-decoration:underline;text-underline-offset:3px}
+.verificationHelp button:focus-visible{border-radius:2px;outline:2px solid var(--color-accent);outline-offset:3px}
+.verificationHelp button:disabled{color:var(--color-text-muted);cursor:not-allowed}
+.authForm .rememberLogin{display:flex;align-items:center;gap:9px;cursor:pointer}
+.authForm .rememberLogin input{width:18px;height:18px;padding:0;accent-color:var(--color-accent);box-shadow:none}
+.authForm .rememberLogin span{font-weight:500}
+.authSubmit,.authSecondary{min-height:46px;padding:0 18px;border-radius:2px;cursor:pointer;font-weight:700}
+.authSubmit{border:1px solid var(--color-accent);background:var(--color-accent);color:#fff}
+.authSubmit:hover{background:var(--color-accent-hover)}
+.authSecondary{border:1px solid var(--color-border);background:transparent;color:var(--color-text)}
+.authSecondary:hover{border-color:var(--color-accent);color:var(--color-accent)}
+.authMessage{margin:0;padding:10px 12px;border-left:3px solid var(--color-accent);background:var(--color-accent-soft);color:var(--color-text-secondary);font-size:14px;line-height:1.5}
+.authMessage--error{border-left-color:var(--color-error);color:var(--color-error)}
+.authMessage--success{border-left-color:var(--color-success);color:var(--color-success)}
+.authAlternative{margin:24px 0 0;color:var(--color-text-secondary);font-size:14px;text-align:center}
+.authAlternative a{color:var(--color-accent);font-weight:600}
+.accountDetails{margin:30px 0 22px;border-top:1px solid var(--color-border)}
+.accountDetails>div{display:grid;grid-template-columns:110px minmax(0,1fr);gap:18px;padding:14px 0;border-bottom:1px solid var(--color-border)}
+.accountDetails dt{color:var(--color-text-muted);font-size:13px;font-weight:600}
+.accountDetails dd{min-width:0;margin:0;color:var(--color-text);font-size:14px;overflow-wrap:anywhere}
+.accountDetails code{font:13px var(--mono)}
+.accountLogout{width:100%}
+.authFullButton{width:100%;margin-top:18px}
+.authLinkButton{margin-top:28px;display:flex;align-items:center;justify-content:center;text-decoration:none}
+
+@media(max-width:600px){
+ .authPage{padding:36px 16px 64px}
+ .authPanel{padding:30px 22px}
+ .authPanel h1{font-size:29px}
+ .accountDetails>div{grid-template-columns:1fr;gap:5px}
+}
