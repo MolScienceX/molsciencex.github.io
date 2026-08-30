@@ -1,8 +1,31 @@
 export type Lang = "zh" | "en";
 export type StandardizationStatus = "PENDING" | "STANDARDIZED" | "FAILED";
 export type RecordStatus = "ACTIVE" | "DEPRECATED" | "DELETED";
-export type RecordValue = { value: string; condition: string; source: string; quality: "recommended" | "high" | "standard"; method?: string };
-export type Property = { key: string; label: { zh: string; en: string }; value: string; condition: string; records: RecordValue[] };
+export type ReviewStatus = "PENDING" | "ACCEPTED" | "REJECTED";
+export type RecordValue = {
+  id?: string;
+  value: string;
+  rawValue?: string;
+  condition: string;
+  source: string;
+  sourceCode?: string;
+  sourceRecordKey?: string;
+  quality?: "recommended" | "high" | "standard";
+  method?: string;
+  origin?: string;
+  qualifier?: string;
+  reviewStatus?: ReviewStatus;
+};
+export type Property = {
+  key: string;
+  label: { zh: string; en: string };
+  value: string;
+  condition: string;
+  records: RecordValue[];
+  unit?: string;
+  origin?: string;
+  reviewStatus?: ReviewStatus;
+};
 export type Molecule = {
   uuid?: string; id: string; cid: number; inchikey: string; name: { zh: string; en: string }; iupac: string; aliases: string[];
   formula: string; mass: string; cas: string; smiles: string; inchi: string; description: { zh: string; en: string };

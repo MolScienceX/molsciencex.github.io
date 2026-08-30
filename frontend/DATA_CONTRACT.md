@@ -42,6 +42,18 @@ PostgreSQL / Supabase
 `molecule_id` 是数据库 UUID，不是公开的 `molscience_id`。页面路由和 API 请求必须明确
 区分这两个标识符。
 
+### `GET /molecules/{molecule_id}/properties`
+
+用途：读取该分子已经归档的数值性质记录。响应按 `property_code` 排序，每条记录包含：
+
+- 性质代码、中英文名称、分类与规范单位；
+- 限定符、数值字段和未经改写的 `raw_value`；
+- `conditions` 中保存的值来源与计算软件元数据；
+- 数据集来源、来源记录键、审核状态和入库时间。
+
+该接口会返回实际存储的 `PENDING`、`ACCEPTED` 和 `REJECTED` 状态，前端必须如实标注，
+不得把 `PENDING` 解释成已验证或平台推荐值。
+
 ## 3. 当前分子响应
 
 身份字段：
@@ -49,10 +61,12 @@ PostgreSQL / Supabase
 - `id`：内部 UUID；
 - `molscience_id`：公开稳定编号；
 - `compound_name`、`iupac_name`；
-- `molecular_formula`、`molecular_weight`；
+- `molecular_formula`；
 - `smiles_original`、`smiles_canonical`、`smiles_isomeric`；
-- `inchi`、`inchi_key`、`cas_number`、`pubchem_cid`；
-- `description`。
+- `inchi`、`inchi_key`、`cas_number`、`pubchem_cid`。
+
+`molecular_weight` 不属于分子身份响应。详情页的相对分子质量只从
+`property_code=molecular_weight` 的性质记录派生展示；列表页未读取性质时不填入示例值。
 
 状态与审计字段：
 
@@ -82,11 +96,15 @@ HTTP 状态：
 - 请求中止：不显示错误；
 - 网络恢复后：用户可以重新加载，后续可增加自动后台刷新。
 
-## 5. 尚未接入的科学数据
+## 5. 当前性质数据与尚未接入内容
 
-当前接口只提供分子身份与记录状态。以下内容不得由前端静态数据冒充正式 SQL 数据：
+分子详情页已接入数值性质归档接口。当前首批数据是 PubChem 提供的分子量、拓扑极性
+表面积和 XLogP 计算值；页面根据每条记录的 `value_origin`、计算软件、数据集来源和
+`review_status` 展示，不将其称为实验值。
 
-- 实验性质和原始测量记录；
+以下内容仍不得由前端静态数据冒充正式 SQL 数据：
+
+- 尚未归档的实验性质和原始测量记录；
 - 推荐实验值及推荐依据；
 - 谱图和结构化峰表；
 - GHS 与地区化安全记录；
