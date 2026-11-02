@@ -328,3 +328,5 @@ html[data-theme="dark"] .aboutReadingMain .aboutHeroEditorial{background:linear-
  .aboutReadingMain .aboutHeroActions .primaryAction{width:100%}
  .aboutReadingMain .aboutSection{padding:56px 0;scroll-margin-top:118px}
 }
+
+@media(max-width:520px){.nav nav{gap:10px;font-size:13px}.nav nav a{padding:2px 0}.container{width:min(100% - 24px,1280px)}}

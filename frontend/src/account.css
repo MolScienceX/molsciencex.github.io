@@ -1,0 +1,114 @@
+/* Account center */
+.accountPage{min-height:calc(100vh - 180px);padding:52px 24px 96px;background:var(--bg)}
+.accountShell{width:min(1080px,100%);margin:0 auto}
+.accountShell.accountState{max-width:640px;padding:40px;border:1px solid var(--line);border-radius:2px;background:var(--surface)}
+.accountHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:28px;padding-bottom:26px;border-bottom:1px solid var(--line)}
+.accountHeader h1{margin:4px 0 8px;color:var(--ink);font-size:36px;line-height:1.18;letter-spacing:-.03em}
+.accountEyebrow{margin:0;color:var(--green);font:11px/1.5 var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.accountMuted{margin:0;color:var(--sub);font-size:14px;line-height:1.65}
+.accountCode{margin:8px 0 0;color:var(--muted);font:12px var(--mono)}
+.accountHeaderActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.accountLayout{display:grid;grid-template-columns:190px minmax(0,1fr);gap:48px;padding-top:34px;align-items:start}
+.accountNav{position:sticky;top:96px;display:grid;gap:2px;border-left:1px solid var(--line);padding-left:0}
+.accountNav a{display:block;padding:10px 16px;border-left:2px solid transparent;margin-left:-1px;color:var(--sub);font-size:14px;font-weight:600;line-height:1.4}
+.accountNav a:hover{color:var(--ink);background:var(--soft)}
+.accountNav a.active{border-left-color:var(--green);color:var(--green)}
+.accountNav a:focus-visible{outline:2px solid var(--green);outline-offset:-2px}
+.accountContent{min-width:0;display:grid;gap:42px}
+.accountSection{min-width:0;padding-bottom:38px;border-bottom:1px solid var(--line)}
+.accountSection:last-child{padding-bottom:0;border-bottom:0}
+.accountSectionHead{margin-bottom:20px}
+.accountSectionHead h2{margin:0 0 7px;color:var(--ink);font-size:23px;line-height:1.25;letter-spacing:-.02em}
+.accountSectionHead p{margin:0;max-width:70ch;color:var(--sub);font-size:14px;line-height:1.65}
+.accountFacts{margin:0;border-top:1px solid var(--line)}
+.accountFacts>div{display:grid;grid-template-columns:170px minmax(0,1fr);gap:20px;padding:13px 0;border-bottom:1px solid var(--line)}
+.accountFacts dt{color:var(--muted);font-size:13px;font-weight:600}
+.accountFacts dd{min-width:0;margin:0;color:var(--ink);font-size:14px;overflow-wrap:anywhere}
+.accountFacts code{font:13px var(--mono)}
+.accountEmptyValue{color:var(--muted)}
+.accountBadge{display:inline-flex;align-items:center;margin-left:8px;padding:1px 7px;border:1px solid var(--line);border-radius:2px;color:var(--sub);font:11px/1.5 var(--mono);white-space:nowrap;vertical-align:middle}
+.accountBadge--ok{border-color:color-mix(in srgb,var(--color-success) 40%,var(--line));color:var(--color-success)}
+.accountBadge--warn{border-color:color-mix(in srgb,var(--warn) 40%,var(--line));color:var(--warn)}
+.accountBadge--muted{color:var(--muted)}
+.accountPermissionList{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.accountPermissionList li{display:flex;align-items:baseline;gap:16px;padding:11px 0;border-bottom:1px solid var(--line)}
+.accountPermissionList code{min-width:190px;color:var(--ink);font:13px var(--mono)}
+.accountPermissionList span{color:var(--sub);font-size:14px}
+.accountLinkList{display:grid;border-top:1px solid var(--line)}
+.accountLinkList a{display:grid;gap:3px;padding:15px 0;border-bottom:1px solid var(--line);color:var(--ink)}
+.accountLinkList a:hover strong{color:var(--green)}
+.accountLinkList strong{font-size:15px}
+.accountLinkList span{color:var(--sub);font-size:13px;line-height:1.55}
+.accountLinkList a:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.accountForm{display:grid;gap:20px;max-width:620px}
+.accountForm label{display:grid;gap:7px;min-width:0}
+.accountForm label>span{color:var(--sub);font-size:13px;font-weight:600}
+.accountForm label>small{color:var(--muted);font-size:12px;line-height:1.5}
+.accountForm input,.accountForm select{width:100%;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:2px;background:var(--surface);color:var(--ink);font:15px var(--sans)}
+.accountForm input:focus,.accountForm select:focus{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 20%,transparent);outline:0}
+.accountForm input:disabled{background:var(--soft);color:var(--muted);cursor:not-allowed}
+.accountForm input[aria-invalid="true"]{border-color:var(--danger)}
+.accountForm--inline{grid-template-columns:minmax(0,1.1fr) 150px minmax(0,1fr);align-items:end}
+.accountForm--inline .accountMessage,.accountForm--inline .accountActions{grid-column:1/-1}
+.accountInputRow{display:flex;gap:8px;align-items:center}
+.accountInputRow input{flex:1}
+.accountFieldError{margin:0;color:var(--danger);font-size:12px;line-height:1.45}
+.accountActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.accountButton{min-height:42px;padding:0 16px;border:1px solid var(--green);border-radius:2px;background:var(--green);color:#fff;font:600 14px var(--sans);cursor:pointer;white-space:nowrap}
+.accountButton:hover:not(:disabled){background:var(--green2)}
+.accountButton:disabled{opacity:.55;cursor:not-allowed}
+.accountButton:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.accountButton--quiet{border-color:var(--line);background:transparent;color:var(--ink)}
+.accountButton--quiet:hover:not(:disabled){border-color:var(--green);background:transparent;color:var(--green)}
+.accountButton--danger{border-color:color-mix(in srgb,var(--danger) 55%,var(--line));background:transparent;color:var(--danger)}
+.accountButton--danger:hover:not(:disabled){border-color:var(--danger);background:color-mix(in srgb,var(--danger) 8%,transparent);color:var(--danger)}
+.accountMessage{margin:0;padding:10px 12px;border-left:3px solid var(--green);background:var(--soft);color:var(--sub);font-size:14px;line-height:1.55}
+.accountMessage--error{border-left-color:var(--danger);color:var(--danger)}
+.accountMessage--success{border-left-color:var(--color-success);color:var(--color-success)}
+.accountInlineError{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.accountInlineError p{margin:0;color:var(--danger);font-size:14px}
+.accountSessionList,.accountKeyList{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.accountSessionList li,.accountKeyList li{display:flex;align-items:flex-start;justify-content:space-between;gap:22px;padding:15px 0;border-bottom:1px solid var(--line)}
+.accountSessionList li.isCurrent{background:color-mix(in srgb,var(--green) 4%,transparent)}
+.accountSessionMain,.accountKeyMain{display:grid;gap:4px;min-width:0}
+.accountSessionMain strong,.accountKeyMain strong{display:flex;align-items:center;gap:0;flex-wrap:wrap;color:var(--ink);font-size:14px}
+.accountSessionMain small,.accountKeyMain small{color:var(--muted);font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.accountKeyMain>div{display:flex;align-items:center;flex-wrap:wrap}
+.accountKeyMain>div .accountBadge{margin-left:8px}
+.accountKeyMain code{color:var(--sub);font:12px var(--mono);overflow-wrap:anywhere}
+.accountSecret{margin-top:20px;padding:18px 18px 16px;border:1px solid color-mix(in srgb,var(--green) 40%,var(--line));border-radius:2px;background:color-mix(in srgb,var(--green) 5%,var(--surface))}
+.accountSecretHead{display:grid;gap:4px;margin-bottom:12px}
+.accountSecretHead strong{color:var(--ink);font-size:15px}
+.accountSecretHead span{color:var(--sub);font-size:12px}
+.accountSecretValue{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}
+.accountSecretValue code{flex:1;min-width:240px;padding:11px 12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:12px/1.5 var(--mono);overflow-wrap:anywhere}
+.accountSecret p{margin:11px 0 0;color:var(--sub);font-size:12px;line-height:1.55}
+.accountDisclosure{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0}
+.accountDisclosure summary{cursor:pointer;color:var(--ink);font-size:14px;font-weight:600}
+.accountDisclosure summary:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.accountCodeBlock{margin:14px 0 0;overflow:auto;border:1px solid var(--line);background:var(--soft)}
+.accountCodeBlock pre{margin:0;padding:12px 14px;color:var(--ink);font:12px/1.65 var(--mono);white-space:pre}
+.accountPlainList{margin:14px 0 0;padding-left:20px;color:var(--sub);font-size:13px;line-height:1.65}
+.accountPlainList li+li{margin-top:5px}
+html[data-theme="dark"] .accountButton:not(.accountButton--quiet):not(.accountButton--danger){color:#0f1117}
+html[data-theme="dark"] .accountSecret{background:var(--surface)}
+
+@media(max-width:900px){
+ .accountLayout{grid-template-columns:1fr;gap:26px}
+ .accountNav{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;overflow:visible;border-left:0;border-bottom:1px solid var(--line);padding:0}
+ .accountNav a{padding:11px 14px;border-left:0;border-bottom:2px solid transparent;margin:0;white-space:normal}
+ .accountNav a.active{border-bottom-color:var(--green)}
+ .accountForm--inline{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+ .accountPage{padding:30px 16px 64px}
+ .accountShell.accountState{padding:28px 22px}
+ .accountHeader{display:grid;gap:16px}
+ .accountHeader h1{font-size:29px}
+ .accountHeaderActions{justify-content:flex-start}
+ .accountFacts>div{grid-template-columns:1fr;gap:4px}
+ .accountSessionList li,.accountKeyList li{display:grid;gap:10px}
+ .accountPermissionList li{display:grid;gap:4px}
+ .accountPermissionList code{min-width:0}
+ .accountSecretValue .accountButton{width:100%}
+}

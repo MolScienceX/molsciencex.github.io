@@ -6,14 +6,13 @@ import { Lang } from "./data";
 import {
   AuthApiError,
   confirmPasswordReset,
-  CurrentUser,
   confirmEmail,
-  getCurrentUser,
-  loginAccount,
   registerAccount,
   requestPasswordReset,
   resendEmailVerification,
 } from "./authApi";
+import { setAccessToken } from "./services/http";
+import { NetworkError } from "./services/http";
 
 const MIN_NEW_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
@@ -32,7 +31,7 @@ const COMMON_PASSWORDS = new Set([
   "qwertyuiopasdfgh",
 ]);
 
-function passwordProblem(password: string, lang: Lang): string {
+export function passwordProblem(password: string, lang: Lang): string {
   if (password.length < MIN_NEW_PASSWORD_LENGTH) {
     return lang === "zh"
       ? "密码至少需要 8 个字符。"
@@ -84,7 +83,7 @@ function passwordStrength(password: string): number {
   return Math.min(3, score);
 }
 
-function PasswordFeedback({
+export function PasswordFeedback({
   password,
   lang,
   validationError,
@@ -126,16 +125,34 @@ function PasswordFeedback({
   </div>;
 }
 
-function errorMessage(error: unknown, lang: Lang): string {
+export function errorMessage(error: unknown, lang: Lang): string {
+  if (error instanceof NetworkError) {
+    return lang === "zh"
+      ? "网络连接失败，请检查网络后重试。"
+      : "The network request failed. Check your connection and try again.";
+  }
   if (error instanceof AuthApiError) {
-    const messages: Record<number, [string, string]> = {
-      400: ["验证码不正确或已经失效。", "The code is incorrect or has expired."],
-      401: ["邮箱或密码不正确。", "The email or password is incorrect."],
-      403: ["账号尚未完成邮箱验证。", "This account has not completed email verification."],
-      409: ["该邮箱已经注册。", "That email is already registered."],
-      503: ["验证码邮件暂时无法发送，请稍后重试。", "The verification email could not be sent. Please try again shortly."],
+    const messages: Record<string, [string, string]> = {
+      INVALID_CREDENTIALS: ["邮箱或密码不正确。", "The email or password is incorrect."],
+      EMAIL_NOT_VERIFIED: ["账号尚未完成邮箱验证。", "This account has not completed email verification."],
+      ACCOUNT_LOCKED: ["账号已锁定，请联系管理员。", "This account is locked. Contact an administrator."],
+      ACCOUNT_DISABLED: ["账号已停用，请联系管理员。", "This account is disabled. Contact an administrator."],
+      ACCOUNT_TYPE_NOT_ALLOWED: ["服务账号不能使用网页登录。", "Service accounts cannot sign in to the website."],
+      EMAIL_ALREADY_REGISTERED: ["该邮箱已经注册。", "That email is already registered."],
+      VERIFICATION_CODE_INVALID: ["验证码不正确或已经失效。", "The code is incorrect or has expired."],
+      RESET_TOKEN_INVALID: ["重置链接无效或已经失效。", "The reset link is invalid or has expired."],
+      PASSWORD_REUSED: ["新密码不能与当前密码相同。", "The new password must differ from the current password."],
+      RATE_LIMITED: ["尝试过于频繁，请稍后重试。", "Too many attempts. Please try again shortly."],
+      EMAIL_DELIVERY_FAILED: ["验证码邮件暂时无法发送，请稍后重试。", "The verification email could not be sent. Please try again shortly."],
+      CSRF_TOKEN_MISSING: ["登录状态需要刷新，请重新操作。", "Your session needs to be refreshed. Please try again."],
+      CSRF_TOKEN_INVALID: ["登录状态需要刷新，请重新操作。", "Your session needs to be refreshed. Please try again."],
     };
-    if (messages[error.status]) return messages[error.status][lang === "zh" ? 0 : 1];
+    if (messages[error.code]) return messages[error.code][lang === "zh" ? 0 : 1];
+    if (error.status === 422) {
+      return lang === "zh"
+        ? "输入内容不符合要求，请检查后重试。"
+        : "Some fields are invalid. Check them and try again.";
+    }
   }
   return lang === "zh"
     ? "暂时无法完成请求，请稍后重试。"
@@ -156,7 +173,7 @@ function AuthLayout({
   return <main className="authPage"><section className="authPanel"><p className="authEyebrow">{eyebrow}</p><h1>{title}</h1><p className="authDescription">{description}</p>{children}</section></main>;
 }
 
-function PasswordField({
+export function PasswordField({
   lang,
   name,
   label,
@@ -272,7 +289,7 @@ export function RegisterView({ lang }: { lang: Lang }) {
     }
   };
 
-  return <AuthLayout eyebrow={lang === "zh" ? "创建账号" : "Create account"} title={lang === "zh" ? "注册 MolScience" : "Join MolScience"} description={lang === "zh" ? "注册后，我们会向你的邮箱发送 6 位验证码。昵称可选，也可以稍后在个人中心设置。" : "We will send a six-digit verification code to your email. A nickname is optional and can be added later."}><form className="authForm" noValidate onSubmit={submit}><label><span>{lang === "zh" ? "昵称（可选）" : "Nickname (optional)"}</span><input name="display_name" maxLength={100} autoComplete="name" /></label><label><span>{lang === "zh" ? "邮箱" : "Email"}</span><input name="email" type="email" autoComplete="email" required aria-invalid={Boolean(fieldErrors.email) || undefined} aria-describedby={fieldErrors.email ? "register-email-error" : undefined} onChange={() => clearFieldError("email")} />{fieldErrors.email && <p id="register-email-error" className="authFieldError">{fieldErrors.email}</p>}</label><div className="passwordFieldGroup"><PasswordField lang={lang} name="password" label={lang === "zh" ? "密码" : "Password"} autoComplete="new-password" minLength={MIN_NEW_PASSWORD_LENGTH} value={password} invalid={Boolean(fieldErrors.password)} describedBy="register-password-feedback" onChange={value => { setPassword(value); clearFieldError("password"); }} /><div id="register-password-feedback"><PasswordFeedback password={password} lang={lang} validationError={fieldErrors.password} /></div></div><div className="passwordFieldGroup"><PasswordField lang={lang} name="password_confirmation" label={lang === "zh" ? "确认密码" : "Confirm password"} autoComplete="new-password" minLength={MIN_NEW_PASSWORD_LENGTH} value={passwordConfirmation} invalid={Boolean(fieldErrors.password_confirmation)} describedBy={fieldErrors.password_confirmation ? "register-password-confirmation-error" : undefined} onChange={value => { setPasswordConfirmation(value); clearFieldError("password_confirmation"); }} />{fieldErrors.password_confirmation ? <p id="register-password-confirmation-error" className="authFieldError">{fieldErrors.password_confirmation}</p> : passwordConfirmation && <p className={password === passwordConfirmation ? "passwordMatch passwordMatch--valid" : "passwordMatch passwordMatch--invalid"}>{password === passwordConfirmation ? (lang === "zh" ? "两次输入一致" : "Passwords match") : (lang === "zh" ? "两次输入的密码不一致" : "Passwords do not match")}</p>}</div>{error && <p className="authMessage authMessage--error" role="alert">{error}</p>}<button className="authSubmit" disabled={busy}>{busy ? (lang === "zh" ? "正在注册…" : "Creating account…") : (lang === "zh" ? "注册并发送验证码" : "Create account")}</button></form><p className="authAlternative">{lang === "zh" ? "已经有账号？" : "Already have an account?"} <Link to="/account">{lang === "zh" ? "前往个人中心" : "Go to account"}</Link></p></AuthLayout>;
+  return <AuthLayout eyebrow={lang === "zh" ? "创建账号" : "Create account"} title={lang === "zh" ? "注册 MolScience" : "Join MolScience"} description={lang === "zh" ? "注册后，我们会向你的邮箱发送 6 位验证码。昵称可选，也可以稍后在个人中心设置。" : "We will send a six-digit verification code to your email. A nickname is optional and can be added later."}><form className="authForm" noValidate onSubmit={submit}><label><span>{lang === "zh" ? "昵称（可选）" : "Nickname (optional)"}</span><input name="display_name" maxLength={100} autoComplete="name" /></label><label><span>{lang === "zh" ? "邮箱" : "Email"}</span><input name="email" type="email" autoComplete="email" required aria-invalid={Boolean(fieldErrors.email) || undefined} aria-describedby={fieldErrors.email ? "register-email-error" : undefined} onChange={() => clearFieldError("email")} />{fieldErrors.email && <p id="register-email-error" className="authFieldError">{fieldErrors.email}</p>}</label><div className="passwordFieldGroup"><PasswordField lang={lang} name="password" label={lang === "zh" ? "密码" : "Password"} autoComplete="new-password" minLength={MIN_NEW_PASSWORD_LENGTH} value={password} invalid={Boolean(fieldErrors.password)} describedBy="register-password-feedback" onChange={value => { setPassword(value); clearFieldError("password"); }} /><div id="register-password-feedback"><PasswordFeedback password={password} lang={lang} validationError={fieldErrors.password} /></div></div><div className="passwordFieldGroup"><PasswordField lang={lang} name="password_confirmation" label={lang === "zh" ? "确认密码" : "Confirm password"} autoComplete="new-password" minLength={MIN_NEW_PASSWORD_LENGTH} value={passwordConfirmation} invalid={Boolean(fieldErrors.password_confirmation)} describedBy={fieldErrors.password_confirmation ? "register-password-confirmation-error" : undefined} onChange={value => { setPasswordConfirmation(value); clearFieldError("password_confirmation"); }} />{fieldErrors.password_confirmation ? <p id="register-password-confirmation-error" className="authFieldError">{fieldErrors.password_confirmation}</p> : passwordConfirmation && <p className={password === passwordConfirmation ? "passwordMatch passwordMatch--valid" : "passwordMatch passwordMatch--invalid"}>{password === passwordConfirmation ? (lang === "zh" ? "两次输入一致" : "Passwords match") : (lang === "zh" ? "两次输入的密码不一致" : "Passwords do not match")}</p>}</div>{error && <p className="authMessage authMessage--error" role="alert">{error}</p>}<button className="authSubmit" disabled={busy}>{busy ? (lang === "zh" ? "正在注册…" : "Creating account…") : (lang === "zh" ? "注册并发送验证码" : "Create account")}</button></form><p className="authAlternative">{lang === "zh" ? "已经有账号？" : "Already have an account?"} <Link to="/login">{lang === "zh" ? "前往登录" : "Go to sign in"}</Link></p></AuthLayout>;
 }
 
 export function VerifyEmailView({ lang }: { lang: Lang }) {
@@ -359,10 +376,10 @@ export function ForgotPasswordView({ lang }: { lang: Lang }) {
   };
 
   if (sent) {
-    return <AuthLayout eyebrow={lang === "zh" ? "找回密码" : "Password recovery"} title={lang === "zh" ? "请检查你的邮箱" : "Check your email"} description={lang === "zh" ? "如果该邮箱已注册，你将收到一封密码重置邮件。请同时检查垃圾邮件文件夹。" : "If the email is registered, you will receive a password reset message. Please also check your spam folder."}><p className="authMessage authMessage--success" role="status">{lang === "zh" ? "重置链接将在 15 分钟后失效，并且只能使用一次。" : "The reset link expires in 15 minutes and can only be used once."}</p><button className="authSecondary authFullButton" type="button" onClick={() => setSent(false)}>{lang === "zh" ? "重新填写邮箱" : "Enter another email"}</button><p className="authAlternative"><Link to="/account">{lang === "zh" ? "返回个人中心" : "Back to account"}</Link></p></AuthLayout>;
+    return <AuthLayout eyebrow={lang === "zh" ? "找回密码" : "Password recovery"} title={lang === "zh" ? "请检查你的邮箱" : "Check your email"} description={lang === "zh" ? "如果该邮箱已注册，你将收到一封密码重置邮件。请同时检查垃圾邮件文件夹。" : "If the email is registered, you will receive a password reset message. Please also check your spam folder."}><p className="authMessage authMessage--success" role="status">{lang === "zh" ? "重置链接将在 15 分钟后失效，并且只能使用一次。" : "The reset link expires in 15 minutes and can only be used once."}</p><button className="authSecondary authFullButton" type="button" onClick={() => setSent(false)}>{lang === "zh" ? "重新填写邮箱" : "Enter another email"}</button><p className="authAlternative"><Link to="/login">{lang === "zh" ? "返回登录" : "Back to sign in"}</Link></p></AuthLayout>;
   }
 
-  return <AuthLayout eyebrow={lang === "zh" ? "找回密码" : "Password recovery"} title={lang === "zh" ? "忘记密码？" : "Forgot your password?"} description={lang === "zh" ? "请输入注册时使用的邮箱，我们会向你发送密码重置链接。" : "Enter the email used for registration and we will send you a password reset link."}><form className="authForm" onSubmit={submit}><label><span>{lang === "zh" ? "邮箱" : "Email"}</span><input name="email" type="email" autoComplete="email" required autoFocus /></label>{error && <p className="authMessage authMessage--error" role="alert">{error}</p>}<button className="authSubmit" disabled={busy}>{busy ? (lang === "zh" ? "正在发送…" : "Sending…") : (lang === "zh" ? "发送重置邮件" : "Send reset email")}</button></form><p className="authAlternative"><Link to="/account">{lang === "zh" ? "返回个人中心" : "Back to account"}</Link></p></AuthLayout>;
+  return <AuthLayout eyebrow={lang === "zh" ? "找回密码" : "Password recovery"} title={lang === "zh" ? "忘记密码？" : "Forgot your password?"} description={lang === "zh" ? "请输入注册时使用的邮箱，我们会向你发送密码重置链接。" : "Enter the email used for registration and we will send you a password reset link."}><form className="authForm" onSubmit={submit}><label><span>{lang === "zh" ? "邮箱" : "Email"}</span><input name="email" type="email" autoComplete="email" required autoFocus /></label>{error && <p className="authMessage authMessage--error" role="alert">{error}</p>}<button className="authSubmit" disabled={busy}>{busy ? (lang === "zh" ? "正在发送…" : "Sending…") : (lang === "zh" ? "发送重置邮件" : "Send reset email")}</button></form><p className="authAlternative"><Link to="/login">{lang === "zh" ? "返回登录" : "Back to sign in"}</Link></p></AuthLayout>;
 }
 
 export function ResetPasswordView({ lang }: { lang: Lang }) {
@@ -400,7 +417,7 @@ export function ResetPasswordView({ lang }: { lang: Lang }) {
     setBusy(true);
     try {
       await confirmPasswordReset(token, password, passwordConfirmation);
-      clearStoredSession();
+      setAccessToken(null);
       setComplete(true);
     } catch (caught) {
       if (caught instanceof AuthApiError && caught.status === 400) {
@@ -416,7 +433,7 @@ export function ResetPasswordView({ lang }: { lang: Lang }) {
   };
 
   if (complete) {
-    return <AuthLayout eyebrow={lang === "zh" ? "密码已更新" : "Password updated"} title={lang === "zh" ? "请重新登录" : "Sign in again"} description={lang === "zh" ? "为了保护你的账号，其他设备上的登录状态已经失效。请使用新密码重新登录。" : "For your protection, existing sessions have been invalidated. Sign in with your new password."}><Link className="authSubmit authLinkButton" to="/account">{lang === "zh" ? "前往个人中心" : "Go to account"}</Link></AuthLayout>;
+    return <AuthLayout eyebrow={lang === "zh" ? "密码已更新" : "Password updated"} title={lang === "zh" ? "请重新登录" : "Sign in again"} description={lang === "zh" ? "为了保护你的账号，其他设备上的登录状态已经失效。请使用新密码重新登录。" : "For your protection, existing sessions have been invalidated. Sign in with your new password."}><Link className="authSubmit authLinkButton" to="/login">{lang === "zh" ? "前往登录" : "Go to sign in"}</Link></AuthLayout>;
   }
 
   if (!token) {
@@ -424,96 +441,4 @@ export function ResetPasswordView({ lang }: { lang: Lang }) {
   }
 
   return <AuthLayout eyebrow={lang === "zh" ? "重置密码" : "Reset password"} title={lang === "zh" ? "设置新密码" : "Set a new password"} description={lang === "zh" ? "重置链接将在 15 分钟后失效，并且只能使用一次。" : "The reset link expires in 15 minutes and can only be used once."}><form className="authForm" onSubmit={submit}><div className="passwordFieldGroup"><PasswordField lang={lang} name="new_password" label={lang === "zh" ? "新密码" : "New password"} autoComplete="new-password" minLength={MIN_NEW_PASSWORD_LENGTH} value={password} onChange={setPassword} /><PasswordFeedback password={password} lang={lang} /></div><div className="passwordFieldGroup"><PasswordField lang={lang} name="new_password_confirmation" label={lang === "zh" ? "确认新密码" : "Confirm new password"} autoComplete="new-password" minLength={MIN_NEW_PASSWORD_LENGTH} value={passwordConfirmation} onChange={setPasswordConfirmation} />{passwordConfirmation && <p className={password === passwordConfirmation ? "passwordMatch passwordMatch--valid" : "passwordMatch passwordMatch--invalid"}>{password === passwordConfirmation ? (lang === "zh" ? "两次输入一致" : "Passwords match") : (lang === "zh" ? "两次输入的密码不一致" : "Passwords do not match")}</p>}</div>{error && <p className="authMessage authMessage--error" role="alert">{error}</p>}<button className="authSubmit" disabled={busy}>{busy ? (lang === "zh" ? "正在更新…" : "Updating…") : (lang === "zh" ? "更新密码" : "Update password")}</button></form><p className="authAlternative"><Link to="/forgot-password">{lang === "zh" ? "重新申请重置链接" : "Request another reset link"}</Link></p></AuthLayout>;
-}
-
-const ACCESS_TOKEN_KEY = "molscience-access-token";
-
-function clearStoredSession() {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem("molscience-current-user");
-  sessionStorage.removeItem("molscience-current-user");
-}
-
-function storeSession(token: string, user: CurrentUser, remember: boolean) {
-  clearStoredSession();
-  const storage = remember ? localStorage : sessionStorage;
-  storage.setItem(ACCESS_TOKEN_KEY, token);
-  storage.setItem("molscience-current-user", JSON.stringify(user));
-}
-
-export function AccountView({ lang }: { lang: Lang }) {
-  const [params] = useSearchParams();
-  const [status, setStatus] = useState<"checking" | "guest" | "member">("checking");
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const verified = params.get("verified") === "1";
-
-  useEffect(() => {
-    const token = localStorage.getItem(ACCESS_TOKEN_KEY)
-      || sessionStorage.getItem(ACCESS_TOKEN_KEY);
-    if (!token) {
-      setStatus("guest");
-      return;
-    }
-
-    let active = true;
-    getCurrentUser(token)
-      .then(currentUser => {
-        if (!active) return;
-        setUser(currentUser);
-        setStatus("member");
-      })
-      .catch(caught => {
-        if (!active) return;
-        if (caught instanceof AuthApiError && caught.status === 401) {
-          clearStoredSession();
-        } else {
-          setError(lang === "zh" ? "暂时无法读取登录状态，请重新登录。" : "Your session could not be checked. Please sign in again.");
-        }
-        setStatus("guest");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [lang]);
-
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError("");
-    const data = new FormData(event.currentTarget);
-    setBusy(true);
-    try {
-      const result = await loginAccount(
-        String(data.get("email") || "").trim().toLowerCase(),
-        String(data.get("password") || ""),
-      );
-      storeSession(
-        result.access_token,
-        result.user,
-        data.get("remember") === "on",
-      );
-      setUser(result.user);
-      setStatus("member");
-    } catch (caught) {
-      setError(errorMessage(caught, lang));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  if (status === "checking") {
-    return <AuthLayout eyebrow={lang === "zh" ? "个人中心" : "Account"} title={lang === "zh" ? "正在读取登录状态" : "Checking your session"} description={lang === "zh" ? "请稍候，我们正在确认你的账号信息。" : "Please wait while we confirm your account."}><p className="authMessage" role="status">{lang === "zh" ? "正在加载…" : "Loading…"}</p></AuthLayout>;
-  }
-
-  if (status === "member" && user) {
-    const title = user.display_name
-      ? (lang === "zh" ? `${user.display_name}，你好` : `Hello, ${user.display_name}`)
-      : (lang === "zh" ? "你好，欢迎使用 MolScience" : "Welcome to MolScience");
-    return <AuthLayout eyebrow={lang === "zh" ? "个人中心" : "Account"} title={title} description={lang === "zh" ? "你已登录 MolScience，可以在这里查看和管理账号。" : "You are signed in to MolScience. View and manage your account here."}><dl className="accountDetails"><div><dt>{lang === "zh" ? "邮箱" : "Email"}</dt><dd>{user.email}</dd></div><div><dt>{lang === "zh" ? "昵称" : "Nickname"}</dt><dd>{user.display_name || (lang === "zh" ? "未设置" : "Not set")}</dd></div><div><dt>{lang === "zh" ? "邮箱状态" : "Email status"}</dt><dd>{user.email_verified_at ? (lang === "zh" ? "已验证" : "Verified") : (lang === "zh" ? "待验证" : "Pending verification")}</dd></div>{user.organization && <div><dt>{lang === "zh" ? "组织" : "Organization"}</dt><dd>{user.organization}</dd></div>}</dl><button className="authSecondary accountLogout" type="button" onClick={() => { clearStoredSession(); setUser(null); setStatus("guest"); }}>{lang === "zh" ? "退出登录" : "Sign out"}</button></AuthLayout>;
-  }
-
-  return <AuthLayout eyebrow={lang === "zh" ? "个人中心" : "Account"} title={lang === "zh" ? "登录 MolScience" : "Sign in to MolScience"} description={lang === "zh" ? "使用邮箱和密码登录。首次使用可在下方注册账号。" : "Sign in with your email and password, or create an account below."}>{verified && <p className="authMessage authMessage--success" role="status">{lang === "zh" ? "邮箱验证成功，现在可以登录。" : "Email verified. You can now sign in."}</p>}<form className="authForm" onSubmit={submit}><label><span>{lang === "zh" ? "邮箱" : "Email"}</span><input name="email" type="email" defaultValue={params.get("email") || ""} autoComplete="email" required /></label><PasswordField lang={lang} name="password" label={lang === "zh" ? "密码" : "Password"} autoComplete="current-password" labelAction={<Link className="forgotPasswordLink" to="/forgot-password">{lang === "zh" ? "忘记密码？" : "Forgot password?"}</Link>} /><label className="rememberLogin"><input name="remember" type="checkbox" /><span>{lang === "zh" ? "在此设备上记住登录状态" : "Remember me on this device"}</span></label>{error && <p className="authMessage authMessage--error" role="alert">{error}</p>}<button className="authSubmit" disabled={busy}>{busy ? (lang === "zh" ? "正在登录…" : "Signing in…") : (lang === "zh" ? "登录" : "Sign in")}</button></form><p className="authAlternative">{lang === "zh" ? "还没有账号？" : "New to MolScience?"} <Link to="/register">{lang === "zh" ? "立即注册" : "Create an account"}</Link></p></AuthLayout>;
 }
