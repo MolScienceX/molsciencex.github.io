@@ -80,3 +80,36 @@ app → pages → features → components/services
 - molecule：不存在、待标准化、标准化失败、废弃和部分数据；
 - accessibility：键盘焦点、对话框、44px 触控目标和状态播报；
 - responsive：1440×900、768×1024、390×844，中英文和深浅主题。
+
+
+## 8. 认证与账户中心
+
+本轮在原有结构上增量拆分：
+
+```text
+src/
+├── services/http.ts              # 统一 HTTP 客户端、/api/v1、刷新单飞与错误码
+├── features/auth/
+│   ├── AuthProvider.tsx          # 全局认证状态、资料/会话/密钥操作
+│   └── types.ts                  # Me、Session、ApiKey 等契约
+├── pages/
+│   ├── LoginPage.tsx             # 登录与安全 next 跳转
+│   └── account/
+│       ├── AccountLayout.tsx     # 受保护布局与状态分支
+│       ├── AccountOverview.tsx
+│       ├── ProfilePage.tsx
+│       ├── SecurityPage.tsx
+│       └── DeveloperPage.tsx
+├── AuthViews.tsx                 # 注册、验证、找回/重置密码（保留）
+├── api/config.ts                 # origin 校验与 API 前缀
+└── account.css                   # 账户中心样式
+```
+
+边界：
+
+- `services/http.ts` 是唯一拼接 API 前缀和附加 Authorization 的位置；
+- Access Token 只存在内存，组件不直接读写凭据；
+- `AuthProvider` 拥有登录状态、网络失败重试和标签页刷新协调；
+- 页面只负责表单、列表和错误码映射，不实现授权判断；
+- `/api/v1` 的列表使用 `items` + `pagination`，分子 API 适配器同步更新；
+- 旧 `AccountView` 已从 `AuthViews.tsx` 移除，注册/验证/恢复视图保持原文件。

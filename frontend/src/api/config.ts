@@ -1,11 +1,11 @@
-function readApiBaseUrl(): string {
+function readApiOrigin(): string {
   const configuredValue = import.meta.env.VITE_API_BASE_URL?.trim();
   if (!configuredValue) {
     throw new Error("VITE_API_BASE_URL is not configured");
   }
 
   const url = new URL(configuredValue);
-  if (!['http:', 'https:'].includes(url.protocol)) {
+  if (!["http:", "https:"].includes(url.protocol)) {
     throw new Error("VITE_API_BASE_URL must use HTTP or HTTPS");
   }
   if (
@@ -19,4 +19,6 @@ function readApiBaseUrl(): string {
   return url.origin;
 }
 
-export const API_BASE_URL = readApiBaseUrl();
+export const API_ORIGIN = readApiOrigin();
+export const API_PREFIX = "/api/v1";
+export const API_BASE_URL = `${API_ORIGIN}${API_PREFIX}`;

@@ -176,8 +176,11 @@ export async function getMolecules(
   if (options.standardizationStatus) {
     params.set("standardization_status", options.standardizationStatus);
   }
-  const rows = await request<MoleculeResponse[]>(`/molecules?${params}`, signal);
-  return rows.map(toMolecule);
+  const payload = await request<{
+    items: MoleculeResponse[];
+    pagination: { offset: number; limit: number; has_more: boolean; next_offset: number | null };
+  }>(`/molecules?${params}`, signal);
+  return payload.items.map(toMolecule);
 }
 
 export async function getMolecule(id: string, signal?: AbortSignal): Promise<Molecule> {
