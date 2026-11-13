@@ -1,5 +1,13 @@
 import { Molecule, Property, RecordStatus, StandardizationStatus } from "./data";
 import { API_BASE_URL } from "./api/config";
+import {
+  isMolecule,
+  isMoleculeSearchData,
+  moleculeCache,
+  moleculeCacheKey,
+  stableMoleculeQuery,
+  type MoleculeSearchData,
+} from "./moleculeCache";
 
 type MoleculeResponse = {
   id: string;
@@ -151,21 +159,44 @@ function toProperties(rows: MoleculePropertyResponse[]): Property[] {
   return [...properties.values()];
 }
 
-async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
+export type MoleculeDataResult<T> = {
+  data: T;
+  source: "cache" | "network";
+  fetchedAt: number;
+  fresh: boolean;
+  stored: boolean;
+};
+
+export class MoleculeApiError extends Error {
+  constructor(public status: number) {
+    super(status === 404 || status === 410 ? "not-found" : `api-${status}`);
+    this.name = "MoleculeApiError";
+  }
+}
+
+export function isMoleculeMissingError(error: unknown): boolean {
+  return error instanceof MoleculeApiError && (error.status === 404 || error.status === 410);
+}
+
+export function isMoleculeAccessDeniedError(error: unknown): boolean {
+  return error instanceof MoleculeApiError && (error.status === 401 || error.status === 403);
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new DOMException("The request was aborted", "AbortError");
+}
+
+async function request<T>(path: string, signal?: AbortSignal, bypassHttpCache = false): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: { Accept: "application/json" },
     signal,
+    ...(bypassHttpCache ? { cache: "no-store" as RequestCache } : {}),
   });
-  if (!response.ok) {
-    throw new Error(response.status === 404 ? "not-found" : `api-${response.status}`);
-  }
+  if (!response.ok) throw new MoleculeApiError(response.status);
   return response.json() as Promise<T>;
 }
 
-export async function getMolecules(
-  signal?: AbortSignal,
-  options: MoleculeListOptions = {},
-): Promise<Molecule[]> {
+function moleculeListQuery(options: MoleculeListOptions): string {
   const params = new URLSearchParams({
     offset: String(options.offset ?? 0),
     limit: String(options.limit ?? 100),
@@ -176,18 +207,60 @@ export async function getMolecules(
   if (options.standardizationStatus) {
     params.set("standardization_status", options.standardizationStatus);
   }
-  const payload = await request<{
-    items: MoleculeResponse[];
-    pagination: { offset: number; limit: number; has_more: boolean; next_offset: number | null };
-  }>(`/molecules?${params}`, signal);
-  return payload.items.map(toMolecule);
+  return stableMoleculeQuery(params);
 }
 
-export async function getMolecule(id: string, signal?: AbortSignal): Promise<Molecule> {
+async function getMoleculePage(
+  signal?: AbortSignal,
+  options: MoleculeListOptions = {},
+  bypassHttpCache = false,
+): Promise<MoleculeSearchData> {
+  const query = moleculeListQuery(options);
+  const payload = await request<Omit<MoleculeSearchData, "items"> & { items: MoleculeResponse[] }>(
+    `/molecules?${query}`,
+    signal,
+    bypassHttpCache,
+  );
+  return { ...payload, items: payload.items.map(toMolecule) };
+}
+
+export async function getMolecules(
+  signal?: AbortSignal,
+  options: MoleculeListOptions = {},
+): Promise<Molecule[]> {
+  return (await getMoleculePage(signal, options)).items;
+}
+
+export async function getCachedMolecules(
+  signal?: AbortSignal,
+  options: MoleculeListOptions = {},
+  forceRefresh = false,
+): Promise<MoleculeDataResult<MoleculeSearchData>> {
+  const key = moleculeCacheKey(API_BASE_URL, "search", moleculeListQuery(options));
+  if (!forceRefresh) {
+    const cached = moleculeCache.read(key, "search", isMoleculeSearchData);
+    if (cached) {
+      throwIfAborted(signal);
+      return { data: cached.value, source: "cache", fetchedAt: cached.fetchedAt, fresh: cached.fresh, stored: true };
+    }
+  }
+  try {
+    const data = await getMoleculePage(signal, options, forceRefresh);
+    throwIfAborted(signal);
+    const fetchedAt = Date.now();
+    const stored = moleculeCache.write(key, "search", data, isMoleculeSearchData, fetchedAt);
+    return { data, source: "network", fetchedAt, fresh: true, stored };
+  } catch (error) {
+    if (isMoleculeAccessDeniedError(error) || isMoleculeMissingError(error)) moleculeCache.remove(key);
+    throw error;
+  }
+}
+
+export async function getMolecule(id: string, signal?: AbortSignal, bypassHttpCache = false): Promise<Molecule> {
   const encodedId = encodeURIComponent(id);
   const [row, observations] = await Promise.all([
-    request<MoleculeResponse>(`/molecules/${encodedId}`, signal),
-    request<MoleculePropertyResponse[]>(`/molecules/${encodedId}/properties`, signal),
+    request<MoleculeResponse>(`/molecules/${encodedId}`, signal, bypassHttpCache),
+    request<MoleculePropertyResponse[]>(`/molecules/${encodedId}/properties`, signal, bypassHttpCache),
   ]);
   const molecule = toMolecule(row);
   molecule.properties = toProperties(observations);
@@ -196,4 +269,30 @@ export async function getMolecule(id: string, signal?: AbortSignal): Promise<Mol
   const molecularWeight = molecule.properties.find(property => property.key === "molecular_weight");
   molecule.mass = molecularWeight?.records[0]?.rawValue || "";
   return molecule;
+}
+
+export async function getCachedMolecule(
+  id: string,
+  signal?: AbortSignal,
+  forceRefresh = false,
+): Promise<MoleculeDataResult<Molecule>> {
+  const key = moleculeCacheKey(API_BASE_URL, "detail", encodeURIComponent(id));
+  if (!forceRefresh) {
+    const cached = moleculeCache.read(key, "detail", isMolecule);
+    if (cached?.value.uuid === id) {
+      throwIfAborted(signal);
+      return { data: cached.value, source: "cache", fetchedAt: cached.fetchedAt, fresh: cached.fresh, stored: true };
+    }
+    if (cached) moleculeCache.remove(key);
+  }
+  try {
+    const data = await getMolecule(id, signal, forceRefresh);
+    throwIfAborted(signal);
+    const fetchedAt = Date.now();
+    const stored = data.uuid === id && moleculeCache.write(key, "detail", data, isMolecule, fetchedAt);
+    return { data, source: "network", fetchedAt, fresh: true, stored };
+  } catch (error) {
+    if (isMoleculeAccessDeniedError(error) || isMoleculeMissingError(error)) moleculeCache.remove(key);
+    throw error;
+  }
 }
