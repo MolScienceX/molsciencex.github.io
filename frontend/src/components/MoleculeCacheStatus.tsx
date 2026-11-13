@@ -2,6 +2,7 @@ import type { Lang } from "../data";
 
 type MoleculeCacheStatusProps = {
   lang: Lang;
+  firstPageOnly?: boolean;
   source: "cache" | "network";
   fetchedAt: number;
   updating: boolean;
@@ -13,6 +14,7 @@ type MoleculeCacheStatusProps = {
 
 export function MoleculeCacheStatus({
   lang,
+  firstPageOnly = false,
   source,
   fetchedAt,
   updating,
@@ -32,7 +34,7 @@ export function MoleculeCacheStatus({
   return (
     <div className="cacheStatus">
       <div className="cacheStatusText" aria-live="polite" role={updateFailed || clearState === "error" ? "alert" : "status"}>
-        <span><b>{sourceLabel}</b> · {lang === "zh" ? "获取于" : "Fetched"} <time dateTime={time.toISOString()}>{time.toLocaleString(lang === "zh" ? "zh-CN" : "en-US")}</time></span>
+        <span>{firstPageOnly && (lang === "zh" ? "首批结果：" : "First page: ")}<b>{sourceLabel}</b> · {lang === "zh" ? "获取于" : "Fetched"} <time dateTime={time.toISOString()}>{time.toLocaleString(lang === "zh" ? "zh-CN" : "en-US")}</time></span>
         {updating && <span>{lang === "zh" ? "正在更新…" : "Updating…"}</span>}
         {updateFailed && <span>{failureText}</span>}
         {clearState === "cleared" && <span>{lang === "zh" ? "已清除保存的本地数据缓存；当前页面内容仍保留。" : "Saved local data cache cleared. This page remains visible."}</span>}

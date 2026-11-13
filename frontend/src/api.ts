@@ -1,3 +1,4 @@
+import type { QueryType, SearchSort, SearchMatch } from "./search";
 import { Molecule, Property, RecordStatus, StandardizationStatus } from "./data";
 import { API_BASE_URL } from "./api/config";
 import {
@@ -10,6 +11,7 @@ import {
 } from "./moleculeCache";
 
 type MoleculeResponse = {
+  match?: SearchMatch | null;
   id: string;
   molscience_id: string;
   compound_name: string | null;
@@ -58,13 +60,15 @@ export type MoleculeListOptions = {
   query?: string;
   recordStatus?: Exclude<RecordStatus, "DELETED">;
   standardizationStatus?: StandardizationStatus;
-  sort?: "id" | "created_at_desc" | "created_at_asc" | "name";
+  sort?: SearchSort;
+  queryType?: QueryType;
 };
 
 function toMolecule(row: MoleculeResponse): Molecule {
   const displayName = row.compound_name || row.iupac_name || row.molscience_id;
   return {
     uuid: row.id,
+    match: row.match ?? undefined,
     id: row.molscience_id,
     cid: row.pubchem_cid || 0,
     inchikey: row.inchi_key || "",
@@ -200,7 +204,8 @@ function moleculeListQuery(options: MoleculeListOptions): string {
   const params = new URLSearchParams({
     offset: String(options.offset ?? 0),
     limit: String(options.limit ?? 100),
-    sort: options.sort ?? "id",
+    sort: options.sort ?? (options.query?.trim() ? "relevance" : "id"),
+    query_type: options.queryType ?? "auto",
   });
   if (options.query?.trim()) params.set("q", options.query.trim());
   if (options.recordStatus) params.set("record_status", options.recordStatus);

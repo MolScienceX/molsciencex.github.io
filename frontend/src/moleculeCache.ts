@@ -1,7 +1,7 @@
 import type { Molecule, Property, RecordValue } from "./data";
 
 export const MOLECULE_CACHE_PREFIX = "molscience-public-data:";
-export const MOLECULE_CACHE_VERSION = 1;
+export const MOLECULE_CACHE_VERSION = 2;
 export const MOLECULE_CACHE_DEFAULTS = {
   freshMs: 24 * 60 * 60 * 1000,
   retentionMs: 7 * 24 * 60 * 60 * 1000,
@@ -97,7 +97,10 @@ export function isMolecule(value: unknown): value is Molecule {
     && value.safety.zh.every(item => typeof item === "string")
     && Array.isArray(value.safety.en)
     && value.safety.en.every(item => typeof item === "string");
-  return isOptionalString(value.uuid)
+  const validMatch = value.match === undefined || (isObject(value.match)
+    && ["molscience_id", "compound_name", "iupac_name", "molecular_formula", "smiles_original", "smiles_canonical", "smiles_isomeric", "inchi", "inchi_key", "cas_number", "pubchem_cid"].includes(String(value.match.field))
+    && ["exact", "prefix", "contains"].includes(String(value.match.kind)));
+  return validMatch && isOptionalString(value.uuid)
     && typeof value.id === "string"
     && typeof value.cid === "number"
     && Number.isFinite(value.cid)

@@ -1,3 +1,4 @@
+import type { SearchMatch } from "./search";
 export type Lang = "zh" | "en";
 export type StandardizationStatus = "PENDING" | "STANDARDIZED" | "FAILED";
 export type RecordStatus = "ACTIVE" | "DEPRECATED" | "DELETED";
@@ -27,6 +28,7 @@ export type Property = {
   reviewStatus?: ReviewStatus;
 };
 export type Molecule = {
+  match?: SearchMatch;
   uuid?: string; id: string; cid: number; inchikey: string; name: { zh: string; en: string }; iupac: string; aliases: string[];
   formula: string; mass: string; cas: string; smiles: string; inchi: string; description: { zh: string; en: string };
   categories: ("numeric" | "spectra" | "safety")[]; sources: string[]; properties: Property[]; spectra: string[];
