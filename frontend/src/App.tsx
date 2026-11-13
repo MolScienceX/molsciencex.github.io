@@ -1,9 +1,11 @@
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Lang, Molecule, Property, detectType, structureImage } from "./data";
-import { getMolecule, getMolecules } from "./api";
+import { getCachedMolecule, getCachedMolecules, isMoleculeAccessDeniedError, isMoleculeMissingError } from "./api";
+import { clearMoleculeCache } from "./moleculeCache";
 import { AboutHub, PortalHome } from "./PortalViews";
 import { DataRequestState } from "./components/DataRequestState";
+import { MoleculeCacheStatus } from "./components/MoleculeCacheStatus";
 import { ForgotPasswordView, RegisterView, ResetPasswordView, VerifyEmailView } from "./AuthViews";
 import { LoginPage } from "./pages/LoginPage";
 import { AccountLayout } from "./pages/account/AccountLayout";
@@ -49,13 +51,43 @@ function About({lang}:{lang:Lang}){return <AboutHub lang={lang}/>}
 function Results({lang,t}:{lang:Lang;t:Text}){
  const [params]=useSearchParams();const batch=params.get("batch")==="1";const q=params.get("q")||"";const [sort,setSort]=useState<"id"|"created_at_desc"|"name">("id");
  const [available,setAvailable]=useState<Molecule[]>([]);const [apiState,setApiState]=useState<"loading"|"ready"|"error">("loading");
- const [reload,setReload]=useState(0);
- useEffect(()=>{const controller=new AbortController();setApiState("loading");getMolecules(controller.signal,{query:batch?undefined:q,recordStatus:"ACTIVE",sort,limit:100}).then(rows=>{setAvailable(rows);setApiState("ready")}).catch(error=>{if(error.name!=="AbortError")setApiState("error")});return()=>controller.abort()},[batch,q,reload,sort]);
+ const [reload,setReload]=useState(0);const [source,setSource]=useState<"cache"|"network"|null>(null);const [fetchedAt,setFetchedAt]=useState<number|null>(null);
+ const [updateState,setUpdateState]=useState<"idle"|"refreshing"|"failed">("idle");const [clearState,setClearState]=useState<"idle"|"cleared"|"error">("idle");
+ const forceRefresh=useRef(false);const requestActive=useRef(false);
+ useEffect(()=>{
+  const controller=new AbortController();const manual=forceRefresh.current;forceRefresh.current=false;let visible=manual;
+  setClearState("idle");
+  if(manual){requestActive.current=true;setApiState("ready");setUpdateState("refreshing")}
+  else{requestActive.current=false;setAvailable([]);setSource(null);setFetchedAt(null);setUpdateState("idle");setApiState("loading")}
+  const run=async()=>{
+   try{
+    let result=await getCachedMolecules(controller.signal,{query:batch?undefined:q,recordStatus:"ACTIVE",sort,limit:100},manual);
+    if(controller.signal.aborted)return;
+    visible=true;setAvailable(result.data.items);setSource(result.source);setFetchedAt(result.fetchedAt);setApiState("ready");
+    if(result.source==="cache"&&!result.fresh){
+     requestActive.current=true;setUpdateState("refreshing");
+     result=await getCachedMolecules(controller.signal,{query:batch?undefined:q,recordStatus:"ACTIVE",sort,limit:100},true);
+     if(controller.signal.aborted)return;
+     setAvailable(result.data.items);setSource(result.source);setFetchedAt(result.fetchedAt);
+    }
+    requestActive.current=false;setUpdateState("idle");
+   }catch(error){
+    if(controller.signal.aborted||(error as Error).name==="AbortError")return;
+    requestActive.current=false;
+    if(isMoleculeAccessDeniedError(error)){visible=false;setAvailable([]);setSource(null);setFetchedAt(null)}
+    if(visible){setApiState("ready");setUpdateState("failed")}
+    else{setApiState("error");setUpdateState("idle")}
+   }
+  };
+  void run();return()=>{controller.abort();requestActive.current=false};
+ },[batch,q,reload,sort]);
+ const refresh=()=>{if(requestActive.current)return;requestActive.current=true;forceRefresh.current=true;setUpdateState("refreshing");setClearState("idle");setReload(value=>value+1)};
+ const clear=()=>setClearState(clearMoleculeCache()?"cleared":"error");
  const shown=useMemo(()=>{if(!batch)return available;const ids=JSON.parse(sessionStorage.getItem("molscience-batch-ids")||"[]") as string[];return available.filter(m=>ids.some(id=>[m.id,m.cas,m.inchikey,String(m.cid)].includes(id)))},[available,batch]);
  const title=batch?(lang==="zh"?"批量 ID 检索":"Batch ID search"):`“${q}”`;const type=batch?(lang==="zh"?"ID 文件":"ID file"):detectType(q,lang);
  if(apiState==="loading")return <DataRequestState lang={lang} kind="loading" subject="results"/>;
  if(apiState==="error")return <DataRequestState lang={lang} kind="error" subject="results" onRetry={()=>setReload(value=>value+1)}/>;
- return <main className="results container"><div className="resultsTitle"><div><p className="eyebrow">{t.result}</p><h1>{title}</h1><p className="queryRecognition">{t.identified} <b>{type}</b> · {shown.length} {t.count}</p></div><label className="resultSort"><span>{lang==="zh"?"排序":"Sort"}</span><select value={sort} onChange={e=>setSort(e.target.value as "id"|"created_at_desc"|"name")}><option value="id">{lang==="zh"?"默认顺序":"Default"}</option><option value="created_at_desc">{lang==="zh"?"最近入库":"Recently added"}</option><option value="name">{lang==="zh"?"分子名称":"Molecule name"}</option></select></label></div><div className="notice"><b>i</b>{t.demo}</div><div className="resultsGrid"><aside className="filters"><div className="filterHeading"><h2>{lang==="zh"?"当前数据范围":"Current data scope"}</h2></div><div className="filterGroup"><h3>{lang==="zh"?"分子状态":"Molecule status"}</h3><p>{lang==="zh"?"仅显示有效分子。已归档性质在详情页展示；按性质、谱学和安全信息筛选将在后续接口中启用。":"Only active molecules are shown. Archived properties appear on detail pages; property, spectra, and safety filters will follow."}</p></div></aside><section className="list">{shown.length?shown.map(m=><ResultCard key={m.id} m={m} lang={lang} t={t} query={q}/>):<div className="empty"><Atom/><h2>{t.none}</h2><p>{t.noneText}</p></div>}</section></div></main>
+ return <main className="results container"><div className="resultsTitle"><div><p className="eyebrow">{t.result}</p><h1>{title}</h1><p className="queryRecognition">{t.identified} <b>{type}</b> · {shown.length} {t.count}</p></div><label className="resultSort"><span>{lang==="zh"?"排序":"Sort"}</span><select value={sort} onChange={e=>setSort(e.target.value as "id"|"created_at_desc"|"name")}><option value="id">{lang==="zh"?"默认顺序":"Default"}</option><option value="created_at_desc">{lang==="zh"?"最近入库":"Recently added"}</option><option value="name">{lang==="zh"?"分子名称":"Molecule name"}</option></select></label></div><div className="notice"><b>i</b>{t.demo}</div>{source&&fetchedAt!==null&&<MoleculeCacheStatus lang={lang} source={source} fetchedAt={fetchedAt} updating={updateState==="refreshing"} updateFailed={updateState==="failed"} clearState={clearState} onRefresh={refresh} onClear={clear}/>}<div className="resultsGrid"><aside className="filters"><div className="filterHeading"><h2>{lang==="zh"?"当前数据范围":"Current data scope"}</h2></div><div className="filterGroup"><h3>{lang==="zh"?"分子状态":"Molecule status"}</h3><p>{lang==="zh"?"仅显示有效分子。已归档性质在详情页展示；按性质、谱学和安全信息筛选将在后续接口中启用。":"Only active molecules are shown. Archived properties appear on detail pages; property, spectra, and safety filters will follow."}</p></div></aside><section className="list">{shown.length?shown.map(m=><ResultCard key={m.id} m={m} lang={lang} t={t} query={q}/>):<div className="empty"><Atom/><h2>{t.none}</h2><p>{t.noneText}</p></div>}</section></div></main>
 }
 function ResultCard({m,lang,t,query}:{m:Molecule;lang:Lang;t:Text;query:string}){
  const value=query.trim().toLowerCase();
@@ -81,8 +113,40 @@ function ResultCard({m,lang,t,query}:{m:Molecule;lang:Lang;t:Text;query:string})
 function Detail({lang,t}:{lang:Lang;t:Text}){
  const {id}=useParams();
  const [m,setM]=useState<Molecule|null>(null);const [apiState,setApiState]=useState<"loading"|"ready"|"not-found"|"error">("loading");
- const [reload,setReload]=useState(0);
- useEffect(()=>{if(!id){setApiState("not-found");return}const controller=new AbortController();setApiState("loading");getMolecule(id,controller.signal).then(row=>{setM(row);setApiState("ready")}).catch(error=>{if(error.name!=="AbortError")setApiState(error.message==="not-found"?"not-found":"error")});return()=>controller.abort()},[id,reload]);
+ const [reload,setReload]=useState(0);const [source,setSource]=useState<"cache"|"network"|null>(null);const [fetchedAt,setFetchedAt]=useState<number|null>(null);
+ const [updateState,setUpdateState]=useState<"idle"|"refreshing"|"failed">("idle");const [clearState,setClearState]=useState<"idle"|"cleared"|"error">("idle");
+ const forceRefresh=useRef(false);const requestActive=useRef(false);
+ useEffect(()=>{
+  if(!id){setM(null);setSource(null);setFetchedAt(null);setApiState("not-found");return}
+  const controller=new AbortController();const manual=forceRefresh.current;forceRefresh.current=false;let visible=manual;
+  setClearState("idle");
+  if(manual){requestActive.current=true;setApiState("ready");setUpdateState("refreshing")}
+  else{requestActive.current=false;setM(null);setSource(null);setFetchedAt(null);setUpdateState("idle");setApiState("loading")}
+  const run=async()=>{
+   try{
+    let result=await getCachedMolecule(id,controller.signal,manual);
+    if(controller.signal.aborted)return;
+    visible=true;setM(result.data);setSource(result.source);setFetchedAt(result.fetchedAt);setApiState("ready");
+    if(result.source==="cache"&&!result.fresh){
+     requestActive.current=true;setUpdateState("refreshing");
+     result=await getCachedMolecule(id,controller.signal,true);
+     if(controller.signal.aborted)return;
+     setM(result.data);setSource(result.source);setFetchedAt(result.fetchedAt);
+    }
+    requestActive.current=false;setUpdateState("idle");
+   }catch(error){
+    if(controller.signal.aborted||(error as Error).name==="AbortError")return;
+    requestActive.current=false;
+    if(isMoleculeMissingError(error)){visible=false;setM(null);setSource(null);setFetchedAt(null);setUpdateState("idle");setApiState("not-found");return}
+    if(isMoleculeAccessDeniedError(error)){visible=false;setM(null);setSource(null);setFetchedAt(null)}
+    if(visible){setApiState("ready");setUpdateState("failed")}
+    else{setApiState("error");setUpdateState("idle")}
+   }
+  };
+  void run();return()=>{controller.abort();requestActive.current=false};
+ },[id,reload]);
+ const refresh=()=>{if(requestActive.current)return;requestActive.current=true;forceRefresh.current=true;setUpdateState("refreshing");setClearState("idle");setReload(value=>value+1)};
+ const clear=()=>setClearState(clearMoleculeCache()?"cleared":"error");
  const [expanded,setExpanded]=useState<string[]>([]);
  const [activeSection,setActiveSection]=useState("overview");
  const sectionIds=["overview","identifiers","properties","spectra","safety","sources"];
@@ -108,7 +172,7 @@ function Detail({lang,t}:{lang:Lang;t:Text}){
  const toggle=(k:string)=>setExpanded(v=>v.includes(k)?v.filter(x=>x!==k):[...v,k]);
  const image=structureImage(m,"large");const empty=lang==="zh"?"暂无数据":"No data available";
  const statusNotice=m.recordStatus==="DEPRECATED"?(lang==="zh"?"该记录已废弃，仅供历史查阅。":"This record is deprecated and retained for historical reference."):m.standardizationStatus==="FAILED"?(lang==="zh"?"结构标准化失败，请谨慎使用标识符。":"Structure standardization failed; use identifiers with caution."):m.standardizationStatus==="PENDING"?(lang==="zh"?"该记录正在等待结构标准化。":"This record is awaiting structure standardization."):null;
- return <main><section className="molHero"><div className="container molHeroGrid">{image?<a className="structure" href={image} target="_blank" rel="noreferrer"><img src={image} alt={`${m.name[lang]} 2D bond-line structure`}/><small>{lang==="zh"?"二维键线式 · 点击放大":"2D bond-line structure · Open large"}</small></a>:<div className="structure"><Atom/><small>{lang==="zh"?"暂无二维结构图":"No 2D structure image"}</small></div>}<div><p className="eyebrow">MolScience ID / {m.id}</p><h1>{m.name[lang]}</h1>{statusNotice&&<p className={`recordStatusNotice recordStatusNotice--${m.recordStatus==="DEPRECATED"||m.standardizationStatus==="FAILED"?"warning":"pending"}`}>{statusNotice}</p>}<p className="muted">{[m.name.en,m.iupac].filter(Boolean).join(" · ")}</p><p>{m.description[lang]||empty}</p><div className="identity"><span><small>Formula</small><code>{m.formula||"—"}</code></span><span><small>{lang==="zh"?"相对分子质量":"Relative molecular mass"}</small><code>{m.mass?`${m.mass} g/mol`:"—"}</code></span><span><small>CAS RN</small><code>{m.cas||"—"}</code></span><span><small>InChIKey</small><code>{m.inchikey||"—"}</code></span></div></div></div></section><div className="container detailGrid"><aside className="sideNav">{sections.map(([sectionId,label])=><a className={activeSection===sectionId?"active":""} href={`#${sectionId}`} onClick={()=>setActiveSection(sectionId)} key={sectionId}>{label}</a>)}</aside><div className="detailBody"><Section id="overview" n="01" title={t.overview}>{m.aliases.length?<div className="aliases"><small>Aliases</small><div className="plainAliasList">{m.aliases.map(x=><span key={x}>{x}</span>)}</div></div>:<p>{empty}</p>}</Section><Section id="identifiers" n="02" title={t.identifiers}><div className="idTable">{[["MolScience ID",m.id],["Canonical SMILES",m.smiles],["InChI",m.inchi],["InChIKey",m.inchikey]].filter(([,v])=>v).map(([label,v])=><IdRow key={label} label={label} value={v} t={t}/>)}</div></Section><Section id="properties" n="03" title={t.properties}>{m.properties.length?<div className="propertyList">{m.properties.map(p=><article className={`propertyRow ${expanded.includes(p.key)?"isExpanded":""}`} key={p.key}><div className="propertySummary"><div><span>{p.label[lang]}</span><small>{t.recommended}</small><small className="dataKind">{propertyOriginLabel(p.origin,lang)}</small></div><strong>{p.value}</strong><p>{reviewStatusLabel(p.reviewStatus,lang)}</p><button onClick={()=>toggle(p.key)} aria-expanded={expanded.includes(p.key)}>{expanded.includes(p.key)?(lang==="zh"?"收起记录":"Hide records"):`${t.allValues} ${p.records.length} ${t.records}`} <b>{expanded.includes(p.key)?"↑":"↓"}</b></button></div>{expanded.includes(p.key)&&<PropertyRecords property={p} lang={lang} t={t}/>}</article>)}</div>:<p>{empty}</p>}</Section><Section id="spectra" n="04" title={t.spectroscopy}>{m.spectra.length?<div className="spectra">{m.spectra.map(x=><article key={x}><SpectrumSlot lang={lang}/><div><h3>{x}</h3></div><b>→</b></article>)}</div>:<p>{empty}</p>}</Section><Section id="safety" n="05" title={t.safetyInfo}><div className={`safety ${m.safety.level}`}><strong><span>!</span>{m.safety.label[lang]}</strong></div></Section><Section id="sources" n="06" title={t.sources}>{m.sources.length?<div className="sourceList">{m.sources.map((x,i)=><article key={x}><span>0{i+1}</span><b>{x}</b><small>Database source</small></article>)}</div>:<p>{empty}</p>}</Section></div></div></main>;
+ return <main><section className="molHero"><div className="container molHeroGrid">{image?<a className="structure" href={image} target="_blank" rel="noreferrer"><img src={image} alt={`${m.name[lang]} 2D bond-line structure`}/><small>{lang==="zh"?"二维键线式 · 点击放大":"2D bond-line structure · Open large"}</small></a>:<div className="structure"><Atom/><small>{lang==="zh"?"暂无二维结构图":"No 2D structure image"}</small></div>}<div><p className="eyebrow">MolScience ID / {m.id}</p><h1>{m.name[lang]}</h1>{statusNotice&&<p className={`recordStatusNotice recordStatusNotice--${m.recordStatus==="DEPRECATED"||m.standardizationStatus==="FAILED"?"warning":"pending"}`}>{statusNotice}</p>}{source&&fetchedAt!==null&&<MoleculeCacheStatus lang={lang} source={source} fetchedAt={fetchedAt} updating={updateState==="refreshing"} updateFailed={updateState==="failed"} clearState={clearState} onRefresh={refresh} onClear={clear}/>}<p className="muted">{[m.name.en,m.iupac].filter(Boolean).join(" · ")}</p><p>{m.description[lang]||empty}</p><div className="identity"><span><small>Formula</small><code>{m.formula||"—"}</code></span><span><small>{lang==="zh"?"相对分子质量":"Relative molecular mass"}</small><code>{m.mass?`${m.mass} g/mol`:"—"}</code></span><span><small>CAS RN</small><code>{m.cas||"—"}</code></span><span><small>InChIKey</small><code>{m.inchikey||"—"}</code></span></div></div></div></section><div className="container detailGrid"><aside className="sideNav">{sections.map(([sectionId,label])=><a className={activeSection===sectionId?"active":""} href={`#${sectionId}`} onClick={()=>setActiveSection(sectionId)} key={sectionId}>{label}</a>)}</aside><div className="detailBody"><Section id="overview" n="01" title={t.overview}>{m.aliases.length?<div className="aliases"><small>Aliases</small><div className="plainAliasList">{m.aliases.map(x=><span key={x}>{x}</span>)}</div></div>:<p>{empty}</p>}</Section><Section id="identifiers" n="02" title={t.identifiers}><div className="idTable">{[["MolScience ID",m.id],["Canonical SMILES",m.smiles],["InChI",m.inchi],["InChIKey",m.inchikey]].filter(([,v])=>v).map(([label,v])=><IdRow key={label} label={label} value={v} t={t}/>)}</div></Section><Section id="properties" n="03" title={t.properties}>{m.properties.length?<div className="propertyList">{m.properties.map(p=><article className={`propertyRow ${expanded.includes(p.key)?"isExpanded":""}`} key={p.key}><div className="propertySummary"><div><span>{p.label[lang]}</span><small>{t.recommended}</small><small className="dataKind">{propertyOriginLabel(p.origin,lang)}</small></div><strong>{p.value}</strong><p>{reviewStatusLabel(p.reviewStatus,lang)}</p><button onClick={()=>toggle(p.key)} aria-expanded={expanded.includes(p.key)}>{expanded.includes(p.key)?(lang==="zh"?"收起记录":"Hide records"):`${t.allValues} ${p.records.length} ${t.records}`} <b>{expanded.includes(p.key)?"↑":"↓"}</b></button></div>{expanded.includes(p.key)&&<PropertyRecords property={p} lang={lang} t={t}/>}</article>)}</div>:<p>{empty}</p>}</Section><Section id="spectra" n="04" title={t.spectroscopy}>{m.spectra.length?<div className="spectra">{m.spectra.map(x=><article key={x}><SpectrumSlot lang={lang}/><div><h3>{x}</h3></div><b>→</b></article>)}</div>:<p>{empty}</p>}</Section><Section id="safety" n="05" title={t.safetyInfo}><div className={`safety ${m.safety.level}`}><strong><span>!</span>{m.safety.label[lang]}</strong></div></Section><Section id="sources" n="06" title={t.sources}>{m.sources.length?<div className="sourceList">{m.sources.map((x,i)=><article key={x}><span>0{i+1}</span><b>{x}</b><small>Database source</small></article>)}</div>:<p>{empty}</p>}</Section></div></div></main>;
 }
 function Section({id,n,title,children}:{id:string;n:string;title:string;children:ReactNode}){return <section className="detailSection" id={id}><div className="sectionTitle"><span>{n}</span><h2>{title}</h2></div>{children}</section>}
 function IdRow({label,value,t}:{label:string;value:string;t:Text}){const [done,setDone]=useState(false);const copy=async()=>{await navigator.clipboard.writeText(value);setDone(true);setTimeout(()=>setDone(false),1000)};return <div><span>{label}</span><code>{value}</code><button onClick={copy}>{done?t.copied:t.copy}</button></div>}

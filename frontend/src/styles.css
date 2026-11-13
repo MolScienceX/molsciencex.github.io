@@ -329,4 +329,6 @@ html[data-theme="dark"] .aboutReadingMain .aboutHeroEditorial{background:linear-
  .aboutReadingMain .aboutSection{padding:56px 0;scroll-margin-top:118px}
 }
 
-@media(max-width:520px){.nav nav{gap:10px;font-size:13px}.nav nav a{padding:2px 0}.container{width:min(100% - 24px,1280px)}}
+.cacheStatus{margin-top:14px;padding-top:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px 20px;border-top:1px solid var(--line)}.cacheStatusText{min-width:0;display:flex;flex:1;flex-wrap:wrap;gap:2px 12px;color:var(--muted);font-size:12px;line-height:1.55}.cacheStatusText>span{min-width:0;overflow-wrap:anywhere}.cacheStatusText b{color:var(--sub);font-weight:600}.cacheStatusActions{display:flex;flex:0 0 auto;gap:8px}.cacheStatusActions button{min-height:36px;padding:6px 10px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--sub);cursor:pointer;font-size:12px;line-height:1.35;white-space:nowrap}.cacheStatusActions button:hover{border-color:var(--green);color:var(--green)}.cacheStatusActions button:disabled{cursor:wait;opacity:.6}
+@media(max-width:760px){.cacheStatus{flex-direction:column}.cacheStatusActions{width:100%;flex-wrap:wrap}.cacheStatusActions button{min-height:44px;white-space:normal}}
+@media(max-width:520px){.nav nav{gap:10px;font-size:13px}.nav nav a{padding:2px 0}.container{width:min(100% - 24px,1280px)}.cacheStatusActions{display:grid;grid-template-columns:1fr 1fr;width:100%}}
