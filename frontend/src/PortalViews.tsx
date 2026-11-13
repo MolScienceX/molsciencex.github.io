@@ -112,7 +112,7 @@ function SketchDialog({open,close,lang}:{open:boolean;close:()=>void;lang:Lang})
   try{
    const q=applet.current?.smiles().trim();
    if(!q||q.length>500)return;
-   saveHistory(q,lang);close();nav(`/search?q=${encodeURIComponent(q)}&source=draw`);
+   saveHistory(q,lang);close();nav(`/search?q=${encodeURIComponent(q)}&source=draw&query_type=smiles&sort=relevance`);
   }catch{setError("export")}
  };
  const zh=lang==="zh";
@@ -132,7 +132,7 @@ function SketchDialog({open,close,lang}:{open:boolean;close:()=>void;lang:Lang})
    <button type="button" className="secondaryAction" disabled={state!=="ready"||!importValue.trim()||importing} onClick={importStructure}>{importing?(zh?"正在导入…":"Importing…"):(zh?"导入并替换结构":"Import and replace")}</button>
    <label className="sketchOutputLabel" htmlFor="sketch-smiles">{zh?"用于搜索的 SMILES":"SMILES to search"}</label>
    <textarea id="sketch-smiles" readOnly value={smiles} placeholder={zh?"绘制或导入后自动生成":"Generated from your drawing"}/>
-   <p>{zh?"将绘制的结构转换为 SMILES，使用现有文字搜索。暂不支持精确结构或子结构匹配；不同 SMILES 写法可能影响结果。":"Converts your drawing to SMILES for the existing text search. Exact structure and substructure matching are not supported; different SMILES representations may give different results."}</p>
+   <p>{zh?"将绘制的结构转换为 SMILES，区分大小写并完整匹配库内 SMILES 文本。不同写法尚不自动视为同一结构，不支持子结构匹配。":"Converts your drawing to SMILES for case-sensitive, exact text matching. Different representations are not treated as equivalent structures. Substructure matching is not supported."}</p>
    {error&&<p className="sketchError" role="alert">{error==="import"?(zh?"无法导入该结构，请检查 SMILES 或 MOL 内容。":"Unable to import this structure. Check the SMILES or MOL content."):(zh?"无法生成 SMILES，请检查绘制的结构。":"Unable to generate SMILES. Check your drawing.")}</p>}
    {smiles.length>500&&<p className="sketchError" role="alert">{zh?"SMILES 超过现有搜索的 500 字符限制，请简化结构。":"SMILES exceeds the existing search limit of 500 characters. Simplify the structure."}</p>}
    <button type="button" className="primaryAction" disabled={state!=="ready"||importing||!smiles||smiles.length>500||!!error} onClick={run}>{zh?"使用 SMILES 搜索":"Search with SMILES"}</button>

@@ -337,3 +337,20 @@ test("clear removes only this cache namespace, including older schema versions",
   assert.equal(storage.getItem("molscience-search-history"), "[]");
   assert.equal(storage.getItem("unrelated-app"), "keep");
 });
+
+test("search type and ranking isolate cached pages, and match metadata survives", () => {
+  const storage = new FakeStorage();
+  const cache = cacheFor(storage);
+  const smiles = new URLSearchParams({q:"CO",query_type:"smiles",sort:"relevance",offset:"0"});
+  const key = moleculeCacheKey("api", "search", stableMoleculeQuery(smiles));
+  const formula = new URLSearchParams(smiles); formula.set("query_type", "formula");
+  const second = new URLSearchParams(smiles); second.set("offset", "20");
+  const value = searchData([{...molecule(), match:{field:"smiles_original",kind:"exact"}}]);
+  assert.equal(cache.write(key,"search",value,isMoleculeSearchData),true);
+  assert.equal(cache.read(key,"search",isMoleculeSearchData).value.items[0].match.kind,"exact");
+  for (const params of [formula,second]) assert.equal(cache.read(moleculeCacheKey("api","search",stableMoleculeQuery(params)),"search",isMoleculeSearchData),null);
+  assert.equal(isMolecule({...molecule(),match:{field:"smiles_original",kind:"similarity"}}),false);
+  assert.equal(isMolecule({...molecule(),match:{field:"unknown",kind:"exact"}}),false);
+  storage.setItem(key,JSON.stringify({version:1,kind:"search",fetchedAt:NOW,lastUsedAt:NOW,value}));
+  assert.equal(cache.read(key,"search",isMoleculeSearchData),null);
+});

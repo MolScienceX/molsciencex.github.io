@@ -1,6 +1,7 @@
+import { appendSearchPage, matchLabel, queryTypes, queryTypeLabels, readQueryType, readSearchSort } from "./search";
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Lang, Molecule, Property, detectType, structureImage } from "./data";
+import { Lang, Molecule, Property, structureImage } from "./data";
 import { getCachedMolecule, getCachedMolecules, isMoleculeAccessDeniedError, isMoleculeMissingError } from "./api";
 import { clearMoleculeCache } from "./moleculeCache";
 import { AboutHub, PortalHome } from "./PortalViews";
@@ -49,49 +50,105 @@ function Home({lang}:{lang:Lang;t:Text}){return <PortalHome lang={lang}/>}
 function About({lang}:{lang:Lang}){return <AboutHub lang={lang}/>}
 
 function Results({lang,t}:{lang:Lang;t:Text}){
- const [params]=useSearchParams();const batch=params.get("batch")==="1";const q=params.get("q")||"";const [sort,setSort]=useState<"id"|"created_at_desc"|"name">("id");
- const [available,setAvailable]=useState<Molecule[]>([]);const [apiState,setApiState]=useState<"loading"|"ready"|"error">("loading");
- const [reload,setReload]=useState(0);const [source,setSource]=useState<"cache"|"network"|null>(null);const [fetchedAt,setFetchedAt]=useState<number|null>(null);
- const [updateState,setUpdateState]=useState<"idle"|"refreshing"|"failed">("idle");const [clearState,setClearState]=useState<"idle"|"cleared"|"error">("idle");
- const forceRefresh=useRef(false);const requestActive=useRef(false);
+ const [params,setParams]=useSearchParams();
+ const batch=params.get("batch")==="1", q=params.get("q")||"";
+ const queryType=readQueryType(params), sort=readSearchSort(params), zh=lang==="zh";
+ const [available,setAvailable]=useState<Molecule[]>([]);
+ const [apiState,setApiState]=useState<"loading"|"ready"|"error">("loading");
+ const [nextOffset,setNextOffset]=useState<number|null>(null);
+ const [moreState,setMoreState]=useState<"idle"|"loading"|"error">("idle");
+ const [reload,setReload]=useState(0), [source,setSource]=useState<"cache"|"network"|null>(null);
+ const [fetchedAt,setFetchedAt]=useState<number|null>(null);
+ const [updateState,setUpdateState]=useState<"idle"|"refreshing"|"failed">("idle");
+ const [clearState,setClearState]=useState<"idle"|"cleared"|"error">("idle");
+ const forceRefresh=useRef(false), requestActive=useRef(false);
+ const searchController=useRef<AbortController|null>(null);
+ const options={query:batch?undefined:q,queryType:batch?"auto" as const:queryType,recordStatus:"ACTIVE" as const,sort,limit:batch?100:20};
  useEffect(()=>{
-  const controller=new AbortController();const manual=forceRefresh.current;forceRefresh.current=false;let visible=manual;
-  setClearState("idle");
-  if(manual){requestActive.current=true;setApiState("ready");setUpdateState("refreshing")}
-  else{requestActive.current=false;setAvailable([]);setSource(null);setFetchedAt(null);setUpdateState("idle");setApiState("loading")}
+  const controller=new AbortController();searchController.current=controller;
+  const manual=forceRefresh.current;forceRefresh.current=false;let visible=manual;
+  requestActive.current=true;setClearState("idle");setMoreState("idle");
+  if(manual){setApiState("ready");setUpdateState("refreshing")}
+  else{setAvailable([]);setNextOffset(null);setSource(null);setFetchedAt(null);setUpdateState("idle");setApiState("loading")}
+  const accept=(result:Awaited<ReturnType<typeof getCachedMolecules>>)=>{
+   visible=true;setAvailable(result.data.items);setNextOffset(result.data.pagination.next_offset);
+   setSource(result.source);setFetchedAt(result.fetchedAt);setApiState("ready");
+  };
   const run=async()=>{
    try{
-    let result=await getCachedMolecules(controller.signal,{query:batch?undefined:q,recordStatus:"ACTIVE",sort,limit:100},manual);
+    let result=await getCachedMolecules(controller.signal,options,manual);
     if(controller.signal.aborted)return;
-    visible=true;setAvailable(result.data.items);setSource(result.source);setFetchedAt(result.fetchedAt);setApiState("ready");
+    accept(result);
     if(result.source==="cache"&&!result.fresh){
-     requestActive.current=true;setUpdateState("refreshing");
-     result=await getCachedMolecules(controller.signal,{query:batch?undefined:q,recordStatus:"ACTIVE",sort,limit:100},true);
-     if(controller.signal.aborted)return;
-     setAvailable(result.data.items);setSource(result.source);setFetchedAt(result.fetchedAt);
+     setUpdateState("refreshing");result=await getCachedMolecules(controller.signal,options,true);
+     if(controller.signal.aborted)return;accept(result);
     }
     requestActive.current=false;setUpdateState("idle");
    }catch(error){
     if(controller.signal.aborted||(error as Error).name==="AbortError")return;
     requestActive.current=false;
-    if(isMoleculeAccessDeniedError(error)){visible=false;setAvailable([]);setSource(null);setFetchedAt(null)}
+    if(isMoleculeAccessDeniedError(error)){visible=false;setAvailable([]);setNextOffset(null);setSource(null);setFetchedAt(null)}
     if(visible){setApiState("ready");setUpdateState("failed")}
-    else{setApiState("error");setUpdateState("idle")}
+    else setApiState("error");
    }
   };
   void run();return()=>{controller.abort();requestActive.current=false};
- },[batch,q,reload,sort]);
- const refresh=()=>{if(requestActive.current)return;requestActive.current=true;forceRefresh.current=true;setUpdateState("refreshing");setClearState("idle");setReload(value=>value+1)};
+ },[batch,q,queryType,reload,sort]);
+ const loadMore=async()=>{
+  const controller=searchController.current;
+  if(nextOffset===null||requestActive.current||!controller||controller.signal.aborted)return;
+  requestActive.current=true;setMoreState("loading");
+  try{
+   const result=await getCachedMolecules(controller.signal,{...options,offset:nextOffset},true);
+   if(controller.signal.aborted)return;
+   setAvailable(current=>appendSearchPage(current,result.data.items));
+   setNextOffset(result.data.pagination.next_offset);setMoreState("idle");
+  }catch(error){
+   if(controller.signal.aborted)return;
+   if(isMoleculeAccessDeniedError(error)){setAvailable([]);setNextOffset(null);setApiState("error")}
+   setMoreState("error");
+  }finally{if(!controller.signal.aborted)requestActive.current=false}
+ };
+ const refresh=()=>{if(requestActive.current)return;forceRefresh.current=true;requestActive.current=true;setReload(value=>value+1)};
  const clear=()=>setClearState(clearMoleculeCache()?"cleared":"error");
- const shown=useMemo(()=>{if(!batch)return available;const ids=JSON.parse(sessionStorage.getItem("molscience-batch-ids")||"[]") as string[];return available.filter(m=>ids.some(id=>[m.id,m.cas,m.inchikey,String(m.cid)].includes(id)))},[available,batch]);
- const title=batch?(lang==="zh"?"批量 ID 检索":"Batch ID search"):`“${q}”`;const type=batch?(lang==="zh"?"ID 文件":"ID file"):detectType(q,lang);
+ const changeOption=(key:string,value:string)=>{const next=new URLSearchParams(params);next.set(key,value);setParams(next)};
+ const shown=useMemo(()=>{
+  if(!batch)return available;
+  try{
+   const ids=JSON.parse(sessionStorage.getItem("molscience-batch-ids")||"[]") as string[];
+   return available.filter(m=>ids.some(id=>[m.id,m.cas,m.inchikey,String(m.cid)].includes(id)));
+  }catch{return []}
+ },[available,batch]);
  if(apiState==="loading")return <DataRequestState lang={lang} kind="loading" subject="results"/>;
  if(apiState==="error")return <DataRequestState lang={lang} kind="error" subject="results" onRetry={()=>setReload(value=>value+1)}/>;
- return <main className="results container"><div className="resultsTitle"><div><p className="eyebrow">{t.result}</p><h1>{title}</h1><p className="queryRecognition">{t.identified} <b>{type}</b> · {shown.length} {t.count}</p></div><label className="resultSort"><span>{lang==="zh"?"排序":"Sort"}</span><select value={sort} onChange={e=>setSort(e.target.value as "id"|"created_at_desc"|"name")}><option value="id">{lang==="zh"?"默认顺序":"Default"}</option><option value="created_at_desc">{lang==="zh"?"最近入库":"Recently added"}</option><option value="name">{lang==="zh"?"分子名称":"Molecule name"}</option></select></label></div><div className="notice"><b>i</b>{params.get("source")==="draw"?(lang==="zh"?"当前结果来自绘图生成的 SMILES 文字搜索，不代表精确结构或子结构匹配。若未找到目标分子，可改用名称、CAS 或 InChIKey。":"These results use text search on the drawn structure’s SMILES, not exact structure or substructure matching. Try a name, CAS or InChIKey if needed."):t.demo}</div>{source&&fetchedAt!==null&&<MoleculeCacheStatus lang={lang} source={source} fetchedAt={fetchedAt} updating={updateState==="refreshing"} updateFailed={updateState==="failed"} clearState={clearState} onRefresh={refresh} onClear={clear}/>}<div className="resultsGrid"><aside className="filters"><div className="filterHeading"><h2>{lang==="zh"?"当前数据范围":"Current data scope"}</h2></div><div className="filterGroup"><h3>{lang==="zh"?"分子状态":"Molecule status"}</h3><p>{lang==="zh"?"仅显示有效分子。已归档性质在详情页展示；按性质、谱学和安全信息筛选将在后续接口中启用。":"Only active molecules are shown. Archived properties appear on detail pages; property, spectra, and safety filters will follow."}</p></div></aside><section className="list">{shown.length?shown.map(m=><ResultCard key={m.id} m={m} lang={lang} t={t} query={q}/>):<div className="empty"><Atom/><h2>{t.none}</h2><p>{t.noneText}</p></div>}</section></div></main>
+ return <main className="results container">
+  <div className="resultsTitle"><div><p className="eyebrow">{t.result}</p>
+   <h1>{batch?(zh?"批量 ID 检索":"Batch ID search"):q?`“${q}”`:(zh?"浏览分子":"Browse molecules")}</h1>
+   <p className="queryRecognition">{zh?"已显示":"Showing"} {shown.length} {t.count}{nextOffset!==null?(zh?" · 还有更多结果":" · More results available"):""}</p>
+  </div><div className="searchOptions">
+   {!batch&&<label>{zh?"检索类型":"Search type"}<select value={queryType} onChange={e=>changeOption("query_type",e.target.value)}>{queryTypes.map(value=><option key={value} value={value}>{queryTypeLabels[value][lang]}</option>)}</select></label>}
+   <label>{zh?"排序":"Sort"}<select value={sort} onChange={e=>changeOption("sort",e.target.value)}>
+    <option value="relevance">{zh?"相关性（完全匹配优先）":"Relevance (exact first)"}</option>
+    <option value="id">{zh?"默认编号顺序":"Default ID order"}</option>
+    <option value="created_at_desc">{zh?"最近入库":"Recently added"}</option>
+    <option value="created_at_asc">{zh?"最早入库":"Oldest first"}</option>
+    <option value="name">{zh?"分子名称":"Molecule name"}</option>
+   </select></label>
+  </div></div>
+  <div className="notice"><b>i</b>{queryType==="smiles"?(zh?"SMILES 区分大小写并按完整文本匹配；不同写法尚不自动识别为同一结构，也不执行子结构检索。":"SMILES uses case-sensitive exact text matching. Equivalent representations and substructures are not matched."):t.demo}</div>
+  {source&&fetchedAt!==null&&<MoleculeCacheStatus firstPageOnly={available.length>options.limit} lang={lang} source={source} fetchedAt={fetchedAt} updating={updateState==="refreshing"} updateFailed={updateState==="failed"} clearState={clearState} onRefresh={refresh} onClear={clear}/>}
+  <div className="resultsGrid"><aside className="filters"><div className="filterHeading"><h2>{zh?"当前数据范围":"Current data scope"}</h2></div><div className="filterGroup"><h3>{zh?"有效分子":"Active molecules"}</h3><p>{zh?"名称支持完全、前缀与包含匹配；结构标识符按完整文本匹配。相关性排序优先展示完全匹配，命中原因由后端返回。":"Names support exact, prefix and contains matches; structure identifiers use exact text matching. Relevance places exact matches first, with match reasons supplied by the backend."}</p></div></aside>
+   <section className="list">{shown.length?shown.map(m=><ResultCard key={m.id} m={m} lang={lang} t={t}/>):<div className="empty"><Atom/><h2>{t.none}</h2><p>{queryType==="smiles"?(zh?"未找到相同的 SMILES 文本。可尝试名称、CAS 或 InChIKey；当前结果不能证明库内不存在等价结构。":"No identical SMILES text was found. Try a name, CAS or InChIKey; equivalent structures may still exist in the database."):t.noneText}</p></div>}
+   {nextOffset!==null&&<div className="searchPagination">
+    {moreState==="error"&&<p role="alert">{zh?"加载失败，已有结果已保留，请重试。":"Loading failed. Existing results are preserved; please retry."}</p>}
+    <button type="button" className="secondaryAction" onClick={()=>void loadMore()} disabled={moreState==="loading"||updateState==="refreshing"}>{moreState==="loading"?(zh?"正在加载…":"Loading…"):moreState==="error"?(zh?"重试加载更多":"Retry loading more"):(zh?"加载更多":"Load more")}</button>
+   </div>}
+   </section>
+  </div>
+ </main>;
 }
-function ResultCard({m,lang,t,query}:{m:Molecule;lang:Lang;t:Text;query:string}){
- const value=query.trim().toLowerCase();
- const reason=m.cas&&m.cas.toLowerCase()===value?"CAS":m.inchikey&&m.inchikey.toLowerCase()===value?"InChIKey":m.formula&&m.formula.toLowerCase()===value?(lang==="zh"?"分子式":"Formula"):(lang==="zh"?"名称或标识符":"Name or identifier");
+function ResultCard({m,lang,t}:{m:Molecule;lang:Lang;t:Text}){
+ const reason=matchLabel(m.match,lang);
  const routeId=m.uuid||m.id;const image=structureImage(m);
  const coverage=[
   m.properties.length?`${m.properties.length} ${lang==="zh"?"项数值性质":"numeric properties"}`:"",
@@ -107,7 +164,7 @@ function ResultCard({m,lang,t,query}:{m:Molecule;lang:Lang;t:Text;query:string})
   {label:"Canonical SMILES",value:m.smiles},
   {label:"InChIKey",value:m.inchikey,wide:true}
  ];
- return <article className="resultCard"><Link className="resultStructure" to={`/molecule/${routeId}`}>{image?<img src={image} alt={`${m.name[lang]} 2D structure`}/>:<Atom/>}</Link><div><div className="resultName"><span><Link to={`/molecule/${routeId}`}><h2>{m.name[lang]}</h2></Link><small>{[m.name.en,m.iupac].filter(Boolean).join(" · ")}</small><p className="resultAliases">{m.aliases.slice(0,4).join(" · ")}</p></span><em>{reason} {lang==="zh"?"匹配":"match"}</em></div><div className="resultIdentityGrid">{fields.map(x=><span className={x.wide?"wide":""} key={x.label}><small>{x.label}</small><code title={x.value||"—"}>{x.value||"—"}</code></span>)}</div><footer><div className="coverage">{coverage.length?coverage.map(item=><span key={item}>{item}</span>):<span className="coverageEmpty">{lang==="zh"?"基础身份数据已入库":"Identity data available"}</span>}</div><Link className="link" to={`/molecule/${routeId}`}>{t.detail} →</Link></footer></div></article>
+ return <article className="resultCard"><Link className="resultStructure" to={`/molecule/${routeId}`}>{image?<img src={image} alt={`${m.name[lang]} 2D structure`}/>:<Atom/>}</Link><div><div className="resultName"><span><Link to={`/molecule/${routeId}`}><h2>{m.name[lang]}</h2></Link><small>{[m.name.en,m.iupac].filter(Boolean).join(" · ")}</small><p className="resultAliases">{m.aliases.slice(0,4).join(" · ")}</p></span><em>{reason}</em></div><div className="resultIdentityGrid">{fields.map(x=><span className={x.wide?"wide":""} key={x.label}><small>{x.label}</small><code title={x.value||"—"}>{x.value||"—"}</code></span>)}</div><footer><div className="coverage">{coverage.length?coverage.map(item=><span key={item}>{item}</span>):<span className="coverageEmpty">{lang==="zh"?"基础身份数据已入库":"Identity data available"}</span>}</div><Link className="link" to={`/molecule/${routeId}`}>{t.detail} →</Link></footer></div></article>
 }
 
 function Detail({lang,t}:{lang:Lang;t:Text}){
