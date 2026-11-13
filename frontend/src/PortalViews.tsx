@@ -3,9 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Lang, Molecule, detectType } from "./data";
 import { getMolecules } from "./api";
 import { getAboutContent } from "./aboutContent";
-
-type JSMEApplet = { smiles: () => string; readMolecule: (value: string) => void };
-declare global { interface Window { JSApplet?: { JSME: new (id:string,width:string,height:string,options:object) => JSMEApplet } } }
+import { loadJsme, type JSMEApplet } from "./jsme";
 
 type PortalText = {
   title:string; lead:string; placeholder:string; search:string; draw:string; ids:string; examples:string;
@@ -30,10 +28,12 @@ const frontierStories:FrontierStory[]=[
  {topic:{zh:"能源材料",en:"Energy materials"},title:{zh:"溶剂桥联电解液拓宽高能锂离子电池的工作边界",en:"Solvent-bridged electrolytes widen the operating range of high-energy Li-ion batteries"},summary:{zh:"溶剂桥联策略拓宽 LiPF₆–醚电解液的液态温区，在维持富 LiF 界面的同时改善离子电导率、低温性能与快充能力。",en:"A solvent-bridging strategy broadens the liquid range of LiPF₆–ether electrolytes while retaining a LiF-rich interface, improving conductivity, low-temperature operation and fast charging."},source:"Nature Chemistry",date:"2026-07-27",status:{zh:"同行评审",en:"Peer reviewed"},url:"https://www.nature.com/articles/s41557-026-02221-7"}
 ].sort((a,b)=>b.date.localeCompare(a.date));
 function saveHistory(query:string,lang:Lang){
+ try{
   const key="molscience-search-history";
   const current=JSON.parse(localStorage.getItem(key)||"[]") as {query:string;type:string;time:string}[];
   const next=[{query,type:detectType(query,lang),time:new Date().toISOString()},...current.filter(x=>x.query!==query)].slice(0,12);
   localStorage.setItem(key,JSON.stringify(next));
+ }catch{/* Optional search history must not prevent a search. */}
 }
 
 export function PortalHome({lang}:{lang:Lang}){
@@ -62,10 +62,82 @@ function Modal({open,close,title,children,wide=false}:{open:boolean;close:()=>vo
 }
 
 function SketchDialog({open,close,lang}:{open:boolean;close:()=>void;lang:Lang}){
- const nav=useNavigate(), applet=useRef<JSMEApplet|null>(null), [ready,setReady]=useState(false), [importValue,setImportValue]=useState("");
- useEffect(()=>{if(!open)return;const init=()=>{if(window.JSApplet&&!applet.current){applet.current=new window.JSApplet.JSME("jsme-editor","100%","410px",{options:"star,hydrogens"});setReady(true)}};init();window.addEventListener("jsme-ready",init);return()=>window.removeEventListener("jsme-ready",init)},[open]);
- const run=()=>{const q=applet.current?.smiles();if(q){saveHistory(q,lang);close();nav(`/search?q=${encodeURIComponent(q)}`)}};
- return <Modal open={open} close={close} wide title={lang==="zh"?"绘制查询结构":"Draw query structure"}><div className="sketchLayout"><div><div id="jsme-editor" className="sketchCanvas">{!ready&&(lang==="zh"?"正在加载结构编辑器…":"Loading structure editor…")}</div></div><aside><label>{lang==="zh"?"导入 SMILES 或 MOL":"Import SMILES or MOL"}</label><textarea value={importValue} onChange={e=>setImportValue(e.target.value)} placeholder="CCO"/><button className="secondaryAction" onClick={()=>applet.current?.readMolecule(importValue)}>{lang==="zh"?"导入结构":"Import"}</button><p>{lang==="zh"?"Phase 1.0 仅执行精确结构检索。":"Phase 1.0 performs exact structure lookup only."}</p><button className="primaryAction" onClick={run}>{lang==="zh"?"精确结构检索":"Exact structure search"}</button></aside></div></Modal>
+ const nav=useNavigate(), applet=useRef<JSMEApplet|null>(null);
+ const [state,setState]=useState<"loading"|"ready"|"error">("loading");
+ const [attempt,setAttempt]=useState(0), [importValue,setImportValue]=useState("");
+ const [smiles,setSmiles]=useState(""), [error,setError]=useState<"import"|"export"|null>(null);
+ const importTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
+ const [importing,setImporting]=useState(false);
+ useEffect(()=>{
+  if(!open)return;
+  let active=true;
+  const update=()=>{
+   try{
+    const value=applet.current?.smiles().trim()||"";
+    setSmiles(value);setError(null);
+    if(value){if(importTimer.current)clearTimeout(importTimer.current);importTimer.current=null;setImporting(false)}
+   }
+   catch{setSmiles("");setError("export")}
+  };
+  if(applet.current){applet.current.setCallBack("AfterStructureModified",update);update()}
+  else{
+   setState("loading");
+   loadJsme().then(library=>{
+    if(!active)return;
+    applet.current=new library.JSME("jsme-editor","100%","410px",{options:"hydrogens,noquery,noreaction"});
+    applet.current.setCallBack("AfterStructureModified",update);
+    setState("ready");update();
+   }).catch(()=>{if(active)setState("error")});
+  }
+  return()=>{active=false;applet.current?.setCallBack("AfterStructureModified",null);if(importTimer.current)clearTimeout(importTimer.current);importTimer.current=null;setImporting(false)};
+ },[open,attempt]);
+ const importStructure=()=>{
+  if(!applet.current||!importValue.trim())return;
+  try{
+   applet.current.reset();
+   setSmiles("");setError(null);setImporting(true);
+   // SMILES import may load the editor's chemistry module asynchronously.
+   importTimer.current=setTimeout(()=>{
+    importTimer.current=null;setImporting(false);
+    if(!applet.current?.smiles().trim())setError("import");
+   },15000);
+   applet.current.readGenericMolecularInput(importValue);
+   const value=applet.current.smiles().trim();
+   if(value){if(importTimer.current)clearTimeout(importTimer.current);importTimer.current=null;setImporting(false);setSmiles(value)}
+  }catch{if(importTimer.current)clearTimeout(importTimer.current);importTimer.current=null;setImporting(false);setSmiles("");setError("import")}
+ };
+ const clear=()=>{applet.current?.reset();setSmiles("");setImportValue("");setError(null)};
+ const run=()=>{
+  if(state!=="ready"||error)return;
+  try{
+   const q=applet.current?.smiles().trim();
+   if(!q||q.length>500)return;
+   saveHistory(q,lang);close();nav(`/search?q=${encodeURIComponent(q)}&source=draw`);
+  }catch{setError("export")}
+ };
+ const zh=lang==="zh";
+ return <Modal open={open} close={close} wide title={zh?"绘制查询结构":"Draw query structure"}>
+  <div className="sketchLayout"><div>
+   <div className="sketchCanvas" aria-busy={state==="loading"}>
+    <div id="jsme-editor"/>
+    {state!=="ready"&&<div className="sketchStatus" role="status">
+     <p>{state==="loading"?(zh?"正在加载结构编辑器…":"Loading structure editor…"):(zh?"结构编辑器加载失败，请检查网络后重试。":"The editor could not load. Check your connection and retry.")}</p>
+     {state==="error"&&<button type="button" className="secondaryAction" onClick={()=>setAttempt(value=>value+1)}>{zh?"重新加载":"Retry"}</button>}
+    </div>}
+   </div>
+   <button type="button" className="secondaryAction" disabled={state!=="ready"||importing} onClick={clear}>{zh?"清空结构":"Clear structure"}</button>
+  </div><aside>
+   <label htmlFor="sketch-import">{zh?"导入 SMILES 或 MOL":"Import SMILES or MOL"}</label>
+   <textarea id="sketch-import" value={importValue} onChange={e=>setImportValue(e.target.value)} placeholder="CCO"/>
+   <button type="button" className="secondaryAction" disabled={state!=="ready"||!importValue.trim()||importing} onClick={importStructure}>{importing?(zh?"正在导入…":"Importing…"):(zh?"导入并替换结构":"Import and replace")}</button>
+   <label className="sketchOutputLabel" htmlFor="sketch-smiles">{zh?"用于搜索的 SMILES":"SMILES to search"}</label>
+   <textarea id="sketch-smiles" readOnly value={smiles} placeholder={zh?"绘制或导入后自动生成":"Generated from your drawing"}/>
+   <p>{zh?"将绘制的结构转换为 SMILES，使用现有文字搜索。暂不支持精确结构或子结构匹配；不同 SMILES 写法可能影响结果。":"Converts your drawing to SMILES for the existing text search. Exact structure and substructure matching are not supported; different SMILES representations may give different results."}</p>
+   {error&&<p className="sketchError" role="alert">{error==="import"?(zh?"无法导入该结构，请检查 SMILES 或 MOL 内容。":"Unable to import this structure. Check the SMILES or MOL content."):(zh?"无法生成 SMILES，请检查绘制的结构。":"Unable to generate SMILES. Check your drawing.")}</p>}
+   {smiles.length>500&&<p className="sketchError" role="alert">{zh?"SMILES 超过现有搜索的 500 字符限制，请简化结构。":"SMILES exceeds the existing search limit of 500 characters. Simplify the structure."}</p>}
+   <button type="button" className="primaryAction" disabled={state!=="ready"||importing||!smiles||smiles.length>500||!!error} onClick={run}>{zh?"使用 SMILES 搜索":"Search with SMILES"}</button>
+  </aside></div>
+ </Modal>
 }
 
 function IdFileDialog({open,close,lang}:{open:boolean;close:()=>void;lang:Lang}){

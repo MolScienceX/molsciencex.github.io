@@ -46,8 +46,8 @@ const copy = {
     "MolScience is built by contributors working across molecular science, data governance and software engineering. Names, roles and affiliations of the core team will be added before the public release."
   ),
   guide: localized(
-    "从名称、别名、CAS、分子式、SMILES、InChI 或 InChIKey 开始检索；也可以绘制结构执行精确检索，或上传 ID 文件批量查找。结果页解释命中方式，详情页展示推荐实验值、完整记录、条件和来源。",
-    "Search by name, alias, CAS, formula, SMILES, InChI or InChIKey. You can draw a structure for exact matching or upload an ID file for batch lookup. Results explain the match; detail pages expose recommended values, complete records, conditions and sources."
+    "从名称、别名、CAS、分子式、SMILES、InChI 或 InChIKey 开始检索；也可以将绘制的结构转换为 SMILES 进行文字检索，或上传 ID 文件批量查找。结果页解释命中方式，详情页展示推荐实验值、完整记录、条件和来源。",
+    "Search by name, alias, CAS, formula, SMILES, InChI or InChIKey. You can convert a drawing to SMILES for text search or upload an ID file for batch lookup. Results explain the match; detail pages expose recommended values, complete records, conditions and sources."
   ),
   contribute: localized(
     "MolScience 接受分子记录、实验物性、谱学数据、来源、代码、文档和问题反馈。所有数据提交都经过格式检查、来源核验和科研审核。",

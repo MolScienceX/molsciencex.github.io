@@ -332,3 +332,18 @@ html[data-theme="dark"] .aboutReadingMain .aboutHeroEditorial{background:linear-
 .cacheStatus{margin-top:14px;padding-top:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px 20px;border-top:1px solid var(--line)}.cacheStatusText{min-width:0;display:flex;flex:1;flex-wrap:wrap;gap:2px 12px;color:var(--muted);font-size:12px;line-height:1.55}.cacheStatusText>span{min-width:0;overflow-wrap:anywhere}.cacheStatusText b{color:var(--sub);font-weight:600}.cacheStatusActions{display:flex;flex:0 0 auto;gap:8px}.cacheStatusActions button{min-height:36px;padding:6px 10px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--sub);cursor:pointer;font-size:12px;line-height:1.35;white-space:nowrap}.cacheStatusActions button:hover{border-color:var(--green);color:var(--green)}.cacheStatusActions button:disabled{cursor:wait;opacity:.6}
 @media(max-width:760px){.cacheStatus{flex-direction:column}.cacheStatusActions{width:100%;flex-wrap:wrap}.cacheStatusActions button{min-height:44px;white-space:normal}}
 @media(max-width:520px){.nav nav{gap:10px;font-size:13px}.nav nav a{padding:2px 0}.container{width:min(100% - 24px,1280px)}.cacheStatusActions{display:grid;grid-template-columns:1fr 1fr;width:100%}}
+
+/* Drawing is an input method for the existing SMILES text search. */
+.sketchCanvas{display:block;position:relative;background:#fff;color:#17191e;isolation:isolate;min-width:0}
+#jsme-editor{width:100%;min-height:410px}
+.sketchStatus{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;background:#fff;color:#5e6470}
+.sketchLayout>div{min-width:0}
+.sketchLayout aside{min-width:0}
+.sketchLayout label{font-size:13px}
+.sketchLayout textarea{width:100%;box-sizing:border-box;font-size:12px;background:var(--surface);color:var(--ink)}
+.sketchLayout .sketchOutputLabel{margin-top:20px}
+.sketchLayout aside p{font-size:13px;line-height:1.65}
+.sketchLayout .sketchError{color:#b53b3b}
+.sketchLayout button:disabled{opacity:.5;cursor:not-allowed}
+html[data-theme="dark"] .sketchLayout .sketchError{color:#ff9999}
+@media(max-width:760px){.sketchLayout>div{padding:10px}.sketchLayout aside{padding:16px}}
